@@ -57,7 +57,6 @@ make dev                               # API on :8000, UI on http://localhost:51
 │       ├── components/
 │       ├── hooks/
 │       └── lib/              # typed API client, utils
-├── Makefile
 └── .github/workflows/ci.yml  # backend + client jobs
 ```
 
