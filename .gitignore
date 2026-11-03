@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Node
+node_modules/
+dist/
+*.local
+
+# Secrets
+.env
+
+# Generated reports
+reports/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
