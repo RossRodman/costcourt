@@ -34,12 +34,25 @@ The debate runs as a **LangGraph** state machine over a configurable number of r
 Requires Python 3.11+ and Node 20.19+.
 
 ```bash
-cp backend/.env.example backend/.env   # add your ANTHROPIC_API_KEY
-make install                           # Python venv + npm deps + git hooks
-make dev                               # API on :8000, UI on http://localhost:5173
+# Backend: http://127.0.0.1:8000/api/docs
+cd backend
+cp .env.example .env              # add your ANTHROPIC_API_KEY
+python3 -m venv .venv
+.venv/bin/pip install -e ".[dev]"
+.venv/bin/costcourt
+
+# Client: http://localhost:5173 (in a second terminal)
+cd client
+npm ci
+npm run dev
 ```
 
-`make help` lists all commands. `make check` runs the same lint, type-check and tests as CI.
+### Checks (same as CI)
+
+```bash
+cd backend && .venv/bin/ruff check . && .venv/bin/mypy && .venv/bin/pytest --cov
+cd client && npm run lint && npm run typecheck && npm test
+```
 
 ## Project layout
 
@@ -49,8 +62,9 @@ make dev                               # API on :8000, UI on http://localhost:51
 │   ├── app/
 │   │   ├── main.py           # app factory
 │   │   ├── api/              # HTTP layer: router, routes/, shared deps
-│   │   ├── core/             # settings, logging
-│   │   └── …                 # feature packages: estimates/, agents/, debate/, reports/
+│   │   ├── core/             # settings, logging, base model, money types
+│   │   ├── estimates/        # estimate model, sample catalog, /api/estimates
+│   │   └── debate/           # roles, arguments, rulings, verdict, report
 │   └── tests/
 ├── client/                   # React + Vite single-page app
 │   └── src/
@@ -62,12 +76,23 @@ make dev                               # API on :8000, UI on http://localhost:51
 
 The backend follows FastAPI's official full-stack template (`app/` with `api/` and `core/`). Business logic lives in feature packages (estimates, agents, debate, reports), so routes stay thin. In dev, Vite proxies `/api` to FastAPI, so no CORS setup is needed.
 
+## Domain model
+
+- **Estimate**: scope, location, currency, priced **line items** (quantity × unit rate) and **markups** (overhead, profit, contingency, tax). Totals are computed, never stored, so they can't drift.
+- **Turn**: one debater's statement in a round, made of **arguments** about specific line items. Each argument either supports the line, proposes a higher or lower figure, or flags missing scope.
+- **Verdict**: the judge's **rulings** per disputed line (accepted / adjusted / rejected), with reasoning and the debaters it sided with.
+- **DebateReport**: the original estimate, every turn, the verdict, the revised estimate and the cost impact.
+
+Money is `Decimal`, rounded half-up to cents. Models are immutable and reject unknown fields, and the same models serve as the agents' structured-output contracts.
+
+Three sample estimates (`backend/app/estimates/samples/`) ship with deliberate, realistic problems for the agents to find: stale rates, under-measured reinforcement, missing waste allowances and a zero contingency on a risky site.
+
 ## Roadmap
 
 The project is built in small, reviewable pull requests:
 
 - [x] **1. Project setup**: FastAPI backend and React/Vite client skeletons, typed settings, linting, strict typing, tests, CI
-- [ ] **2. Domain model**: Pydantic models for estimates, line items, arguments, rulings and reports, plus sample estimates
+- [x] **2. Domain model**: Pydantic models for estimates, line items, arguments, rulings and reports, plus sample estimates
 - [ ] **3. Agents**: Claude client wrapper, role prompts and structured outputs for the estimator, engineer, advocate and judge
 - [ ] **4. Debate graph**: LangGraph orchestration of rounds and judging, tested with a fake LLM
 - [ ] **5. Reports**: decision trail rendered to Markdown, HTML and JSON

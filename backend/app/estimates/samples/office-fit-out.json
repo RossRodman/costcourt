@@ -1,0 +1,124 @@
+{
+  "id": "office-fit-out",
+  "title": "Office fit-out, 3rd floor (850 m²)",
+  "scope": "Cat B fit-out of an 850 m² open-plan floor in an occupied 1990s office building: strip-out, 12 enclosed offices, two meeting rooms, kitchenette, new ceilings, flooring, lighting and power. The landlord requires out-of-hours work for noisy activities and a goods-lift booking for all deliveries. HVAC design is not yet complete.",
+  "location": "Berlin, Germany",
+  "currency": "EUR",
+  "markups": { "overhead": 7, "profit": 9, "contingency": 5, "tax": 19 },
+  "items": [
+    {
+      "id": "01.010",
+      "description": "Strip-out of existing carpet and ceiling tiles",
+      "category": "site_prep",
+      "unit": "m2",
+      "quantity": 850,
+      "unit_rate": 9.5
+    },
+    {
+      "id": "02.010",
+      "description": "Metal-stud drywall partitions, double board, acoustic infill",
+      "category": "finishes",
+      "unit": "m2",
+      "quantity": 420,
+      "unit_rate": 58
+    },
+    {
+      "id": "02.020",
+      "description": "Frameless glass office fronts incl. doors",
+      "category": "finishes",
+      "unit": "m",
+      "quantity": 36,
+      "unit_rate": 640
+    },
+    {
+      "id": "03.010",
+      "description": "Suspended acoustic ceiling, 600×600 grid",
+      "category": "finishes",
+      "unit": "m2",
+      "quantity": 850,
+      "unit_rate": 34
+    },
+    {
+      "id": "03.020",
+      "description": "Carpet tiles incl. adhesive",
+      "category": "finishes",
+      "unit": "m2",
+      "quantity": 690,
+      "unit_rate": 29,
+      "notes": "Net floor area; no waste allowance."
+    },
+    {
+      "id": "03.030",
+      "description": "Sheet vinyl to kitchenette and print room",
+      "category": "finishes",
+      "unit": "m2",
+      "quantity": 45,
+      "unit_rate": 41
+    },
+    {
+      "id": "03.040",
+      "description": "Wall painting, two coats emulsion",
+      "category": "finishes",
+      "unit": "m2",
+      "quantity": 1450,
+      "unit_rate": 6.2
+    },
+    {
+      "id": "04.010",
+      "description": "HVAC modifications for new layout",
+      "category": "mep",
+      "unit": "ls",
+      "quantity": 1,
+      "unit_rate": 18000,
+      "notes": "Allowance only; no design yet."
+    },
+    {
+      "id": "04.020",
+      "description": "LED panel lighting with DALI controls",
+      "category": "mep",
+      "unit": "pcs",
+      "quantity": 140,
+      "unit_rate": 165
+    },
+    {
+      "id": "04.030",
+      "description": "Floor-box power and data outlets",
+      "category": "mep",
+      "unit": "pcs",
+      "quantity": 120,
+      "unit_rate": 95
+    },
+    {
+      "id": "04.040",
+      "description": "Relocate sprinkler heads and fire-alarm detectors",
+      "category": "mep",
+      "unit": "ls",
+      "quantity": 1,
+      "unit_rate": 6500
+    },
+    {
+      "id": "05.010",
+      "description": "Kitchenette joinery and appliances",
+      "category": "carpentry",
+      "unit": "ls",
+      "quantity": 1,
+      "unit_rate": 14500
+    },
+    {
+      "id": "06.010",
+      "description": "Site management (6 weeks)",
+      "category": "general",
+      "unit": "day",
+      "quantity": 30,
+      "unit_rate": 520
+    },
+    {
+      "id": "06.020",
+      "description": "Waste skips, 10 m³",
+      "category": "general",
+      "unit": "pcs",
+      "quantity": 8,
+      "unit_rate": 390
+    }
+  ]
+}

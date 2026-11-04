@@ -1,0 +1,124 @@
+{
+  "id": "house-foundation-frame",
+  "title": "Single-family house: foundation and structural frame",
+  "scope": "Two-storey timber-frame house, 165 m² footprint, on strip footings with a 150 mm slab-on-grade. Geotechnical report flags expansive clay with a seasonal water table about 1.8 m below grade. Scope covers site setup through roof trusses; envelope, MEP and finishes are priced separately.",
+  "location": "Austin, TX, USA",
+  "currency": "USD",
+  "markups": { "overhead": 8, "profit": 10, "contingency": 0, "tax": 0 },
+  "items": [
+    {
+      "id": "01.010",
+      "description": "Site clearing and grubbing",
+      "category": "site_prep",
+      "unit": "m2",
+      "quantity": 450,
+      "unit_rate": 2.8
+    },
+    {
+      "id": "01.020",
+      "description": "Temporary fencing, site toilet and setup",
+      "category": "site_prep",
+      "unit": "ls",
+      "quantity": 1,
+      "unit_rate": 3200
+    },
+    {
+      "id": "02.010",
+      "description": "Excavation for strip footings",
+      "category": "earthworks",
+      "unit": "m3",
+      "quantity": 96,
+      "unit_rate": 18.5
+    },
+    {
+      "id": "02.020",
+      "description": "Haul excavated spoil off site (15 km)",
+      "category": "earthworks",
+      "unit": "m3",
+      "quantity": 96,
+      "unit_rate": 14,
+      "notes": "Bank volume; no bulking factor applied."
+    },
+    {
+      "id": "02.030",
+      "description": "Compacted granular backfill under slab",
+      "category": "earthworks",
+      "unit": "m3",
+      "quantity": 38,
+      "unit_rate": 42
+    },
+    {
+      "id": "03.010",
+      "description": "Ready-mix concrete C25/30 to strip footings",
+      "category": "concrete",
+      "unit": "m3",
+      "quantity": 42,
+      "unit_rate": 118,
+      "notes": "Rate from supplier quote dated 2024."
+    },
+    {
+      "id": "03.020",
+      "description": "Ready-mix concrete C25/30 to 150 mm slab-on-grade",
+      "category": "concrete",
+      "unit": "m3",
+      "quantity": 27,
+      "unit_rate": 118
+    },
+    {
+      "id": "03.030",
+      "description": "Reinforcement steel to footings and slab, cut, bent and fixed",
+      "category": "steel",
+      "unit": "kg",
+      "quantity": 2100,
+      "unit_rate": 1.65
+    },
+    {
+      "id": "03.040",
+      "description": "Formwork to footing edges",
+      "category": "carpentry",
+      "unit": "m2",
+      "quantity": 140,
+      "unit_rate": 24
+    },
+    {
+      "id": "03.050",
+      "description": "Concrete placing and finishing labour",
+      "category": "concrete",
+      "unit": "hr",
+      "quantity": 64,
+      "unit_rate": 48
+    },
+    {
+      "id": "04.010",
+      "description": "Timber wall framing incl. OSB sheathing",
+      "category": "carpentry",
+      "unit": "m2",
+      "quantity": 310,
+      "unit_rate": 46
+    },
+    {
+      "id": "04.020",
+      "description": "Engineered I-joist floor system, upper storey",
+      "category": "carpentry",
+      "unit": "m2",
+      "quantity": 165,
+      "unit_rate": 38
+    },
+    {
+      "id": "04.030",
+      "description": "Prefabricated roof trusses, supply and install",
+      "category": "roofing",
+      "unit": "pcs",
+      "quantity": 24,
+      "unit_rate": 285
+    },
+    {
+      "id": "05.010",
+      "description": "Mobile crane hire for truss lift",
+      "category": "equipment",
+      "unit": "day",
+      "quantity": 1,
+      "unit_rate": 1650
+    }
+  ]
+}
