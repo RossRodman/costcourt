@@ -9,7 +9,7 @@ from __future__ import annotations
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Annotated
 
-from pydantic import AfterValidator, Field, PlainSerializer
+from pydantic import AfterValidator, Field, PlainSerializer, WithJsonSchema
 
 CENT = Decimal("0.01")
 _QTY_STEP = Decimal("0.001")
@@ -25,15 +25,21 @@ def _round_quantity(value: Decimal) -> Decimal:
 
 
 _as_json_number = PlainSerializer(float, return_type=float, when_used="json")
+# Advertise plain numbers (not "number or string") to API clients and the LLM.
+_number_schema = WithJsonSchema({"type": "number"})
 
-Money = Annotated[Decimal, Field(ge=0), AfterValidator(round_money), _as_json_number]
+Money = Annotated[
+    Decimal, Field(ge=0), AfterValidator(round_money), _as_json_number, _number_schema
+]
 """Non-negative amount, rounded to cents."""
 
-SignedMoney = Annotated[Decimal, AfterValidator(round_money), _as_json_number]
+SignedMoney = Annotated[Decimal, AfterValidator(round_money), _as_json_number, _number_schema]
 """Amount that may be negative (e.g. a delta between two totals)."""
 
-Quantity = Annotated[Decimal, Field(gt=0), AfterValidator(_round_quantity), _as_json_number]
+Quantity = Annotated[
+    Decimal, Field(gt=0), AfterValidator(_round_quantity), _as_json_number, _number_schema
+]
 """Strictly positive quantity, up to three decimal places."""
 
-Percent = Annotated[Decimal, Field(ge=0, le=100), _as_json_number]
+Percent = Annotated[Decimal, Field(ge=0, le=100), _as_json_number, _number_schema]
 """Percentage in the 0-100 range (15 means 15 %)."""

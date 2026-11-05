@@ -53,7 +53,9 @@ class Decision(StrEnum):
 class Argument(DomainModel):
     """A single point an agent makes about one line item."""
 
-    line_item_id: str = Field(description="Id of the line item this argument is about.")
+    line_item_id: str | None = Field(
+        description="Id of the line item this argument is about; null only for 'missing' scope."
+    )
     stance: Stance
     claim: str = Field(min_length=5, max_length=300, description="One-sentence position.")
     reasoning: str = Field(
@@ -71,6 +73,8 @@ class Argument(DomainModel):
 
     @model_validator(mode="after")
     def _proposal_matches_stance(self) -> Self:
+        if self.line_item_id is None and self.stance is not Stance.MISSING:
+            raise ValueError(f"a '{self.stance}' argument must reference a line item")
         proposes = self.proposed_quantity is not None or self.proposed_unit_rate is not None
         if self.stance in (Stance.INCREASE, Stance.DECREASE) and not proposes:
             raise ValueError(f"a '{self.stance}' argument must propose a quantity or unit rate")

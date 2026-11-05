@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -20,6 +21,9 @@ class LogLevel(StrEnum):
     INFO = "INFO"
     WARNING = "WARNING"
     ERROR = "ERROR"
+
+
+Effort = Literal["low", "medium", "high", "xhigh", "max"]
 
 
 class Settings(BaseSettings):
@@ -49,10 +53,18 @@ class Settings(BaseSettings):
         default=None,
         validation_alias="ANTHROPIC_API_KEY",
     )
-    debater_model: str = "claude-sonnet-5-5"
+    debater_model: str = "claude-opus-5-5"
     judge_model: str = "claude-opus-5-5"
-    max_output_tokens: int = Field(default=4096, ge=256, le=64_000)
-    request_timeout_s: float = Field(default=120.0, gt=0)
+    debater_effort: Effort = "medium"
+    """How hard debaters think. Higher means deeper arguments, more tokens."""
+    judge_effort: Effort = "high"
+    max_output_tokens: int = Field(default=16_000, ge=1024, le=64_000)
+    """Per call, thinking included."""
+    request_timeout_s: float = Field(default=300.0, gt=0)
+    llm_max_attempts: int = Field(default=2, ge=1, le=5)
+    """Attempts per agent turn when the model's output fails validation."""
+    server_fallback: bool = True
+    """Let the API retry a refused request on Anthropic's recommended fallback model."""
 
     # --- debate ------------------------------------------------------------
     debate_rounds: int = Field(default=2, ge=1, le=5)

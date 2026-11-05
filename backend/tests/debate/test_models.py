@@ -43,6 +43,14 @@ class TestArgument:
     def test_missing_scope_needs_no_figures(self) -> None:
         assert argument(Stance.MISSING).stance is Stance.MISSING
 
+    def test_missing_scope_may_have_no_line_item(self) -> None:
+        assert argument(Stance.MISSING, line_item_id=None).line_item_id is None
+
+    @pytest.mark.parametrize("stance", [Stance.SUPPORT, Stance.DECREASE])
+    def test_other_stances_need_a_line_item(self, stance: Stance) -> None:
+        with pytest.raises(ValidationError, match="must reference a line item"):
+            argument(stance, line_item_id=None, proposed_unit_rate=1)
+
 
 class TestTurn:
     def test_judge_cannot_take_a_turn(self) -> None:
