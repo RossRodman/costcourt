@@ -146,6 +146,17 @@ class Verdict(DomainModel):
 # --------------------------------------------------------------------- report
 
 
+class LLMUsage(DomainModel):
+    """Token usage of one agent call, for cost transparency."""
+
+    role: Role
+    round: int | None = Field(default=None, description="Debate round; null for the judge.")
+    model: str
+    input_tokens: int = Field(default=0, ge=0)
+    output_tokens: int = Field(default=0, ge=0)
+    cache_read_tokens: int = Field(default=0, ge=0)
+
+
 class CostImpact(DomainModel):
     original_total: Money
     revised_total: Money
@@ -173,6 +184,7 @@ class DebateReport(DomainModel):
     turns: tuple[Turn, ...]
     verdict: Verdict
     models: dict[Role, str] = Field(default_factory=dict, description="Model used per role.")
+    usage: tuple[LLMUsage, ...] = Field(default=(), description="Every agent call, in order.")
 
     @computed_field  # type: ignore[prop-decorator]
     @property
