@@ -22,7 +22,7 @@ async def _run(sample_id: str, role: Role) -> None:
     settings = get_settings()
     estimate = get_sample_catalog().get(sample_id)
     panel = build_panel(settings)
-    debater = next(d for d in panel.debaters if d.role is role)
+    debater = panel.debater(role)
 
     print(f"{ROLE_TITLES[role]} is reviewing '{estimate.title}' with {debater.model}…\n")
     completion = await debater.take_turn(estimate, [], round_no=1, total_rounds=1)

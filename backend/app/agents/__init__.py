@@ -8,7 +8,7 @@ from app.agents.debater import Debater
 from app.agents.judge import Judge
 from app.agents.llm import ClaudeLLM, StructuredLLM
 from app.core.config import Settings
-from app.debate.models import DEBATERS
+from app.debate.models import DEBATERS, Role
 
 
 @dataclass(frozen=True, slots=True)
@@ -17,6 +17,12 @@ class Panel:
 
     debaters: tuple[Debater, ...]
     judge: Judge
+
+    def debater(self, role: Role) -> Debater:
+        for debater in self.debaters:
+            if debater.role is role:
+                return debater
+        raise KeyError(f"no {role} on this panel")
 
 
 def build_panel(settings: Settings, llm: StructuredLLM | None = None) -> Panel:

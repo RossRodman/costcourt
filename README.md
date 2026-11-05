@@ -64,7 +64,7 @@ cd client && npm run lint && npm run typecheck && npm test
 │   │   ├── api/              # HTTP layer: router, routes/, shared deps
 │   │   ├── core/             # settings, logging, base model, money types
 │   │   ├── estimates/        # estimate model, sample catalog, /api/estimates
-│   │   ├── debate/           # roles, arguments, rulings, verdict, report
+│   │   ├── debate/           # domain models, LangGraph flow, live sessions, /api/debates
 │   │   └── agents/           # Claude client, role prompts, debaters and judge
 │   └── tests/
 ├── client/                   # React + Vite single-page app
@@ -106,6 +106,46 @@ cd backend
 .venv/bin/python -m app.agents warehouse-slab --role engineer
 ```
 
+## Debate flow
+
+The debate is a LangGraph state machine. Every round, the three debaters speak in turn. After the last round, the judge rules and the verdict is applied to produce the revised estimate.
+
+```mermaid
+flowchart LR
+    S([start]) --> R[open_round]
+    R --> E[estimator] --> G[engineer] --> A[advocate]
+    A -- more rounds --> R
+    A -- last round --> J[judge] --> X([end])
+```
+
+- **One graph serves every debate.** It is compiled once, and the agents are passed in through LangGraph's run context.
+- **Nodes report progress with the stream writer.** The runner turns that into typed events: `debate_started`, `round_started`, `turn_started`, `turn_completed`, `judge_started`, `verdict_reached`, then `debate_completed` (with the full report) or `debate_failed`.
+- **Debates run as background tasks.** Every event is kept, so a client that connects late, or reconnects with `Last-Event-ID`, gets the full history and then the live stream.
+- **Agent failures** (API down, refusal, invalid output) end the stream with a readable `debate_failed` event, never a hanging connection.
+- **The report** records every turn, the verdict, the revised estimate, the cost impact, and the model and token usage of each call.
+
+| Endpoint | |
+|---|---|
+| `POST /api/debates` | Start a debate on `{"sample_id": "warehouse-slab"}` or `{"estimate": {...}}`, optional `rounds`. Returns `202` with the debate id. |
+| `GET /api/debates/{id}/events` | Server-sent events: history, then live. Closes after the terminal event. |
+| `GET /api/debates/{id}` | Status, and the full report once completed |
+| `GET /api/debates` | Recent debates |
+
+Run a full debate in the terminal (makes real API calls):
+
+```bash
+cd backend
+.venv/bin/python -m app.debate warehouse-slab --rounds 1
+```
+
+Or through the API:
+
+```bash
+curl -s -X POST localhost:8000/api/debates -H 'content-type: application/json' \
+  -d '{"sample_id": "warehouse-slab", "rounds": 1}'
+curl -N localhost:8000/api/debates/<id>/events
+```
+
 ## Roadmap
 
 The project is built in small, reviewable pull requests:
@@ -113,7 +153,7 @@ The project is built in small, reviewable pull requests:
 - [x] **1. Project setup**: FastAPI backend and React/Vite client skeletons, typed settings, linting, strict typing, tests, CI
 - [x] **2. Domain model**: Pydantic models for estimates, line items, arguments, rulings and reports, plus sample estimates
 - [x] **3. Agents**: Claude client wrapper, role prompts and structured outputs for the estimator, engineer, advocate and judge
-- [ ] **4. Debate graph**: LangGraph orchestration of rounds and judging, tested with a fake LLM
+- [x] **4. Debate graph**: LangGraph orchestration of rounds and judging, background debates with a live SSE event stream, tested with a fake LLM
 - [ ] **5. Reports**: decision trail rendered to Markdown, HTML and JSON
 - [ ] **6. Web UI**: React screens to upload or pick an estimate, watch the debate stream live (SSE) and read the verdict
 - [ ] **7. Polish**: Docker, screenshots, docs
