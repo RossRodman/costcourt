@@ -64,7 +64,8 @@ cd client && npm run lint && npm run typecheck && npm test
 │   │   ├── api/              # HTTP layer: router, routes/, shared deps
 │   │   ├── core/             # settings, logging, base model, money types
 │   │   ├── estimates/        # estimate model, sample catalog, /api/estimates
-│   │   └── debate/           # roles, arguments, rulings, verdict, report
+│   │   ├── debate/           # roles, arguments, rulings, verdict, report
+│   │   └── agents/           # Claude client, role prompts, debaters and judge
 │   └── tests/
 ├── client/                   # React + Vite single-page app
 │   └── src/
@@ -87,13 +88,31 @@ Money is `Decimal`, rounded half-up to cents. Models are immutable and reject un
 
 Three sample estimates (`backend/app/estimates/samples/`) ship with deliberate, realistic problems for the agents to find: stale rates, under-measured reinforcement, missing waste allowances and a zero contingency on a risky site.
 
+## Agents
+
+Each agent is one structured-output call to Claude: the response is constrained to a Pydantic model's JSON schema and parsed into it.
+
+- **Debaters** (estimator, engineer, contractor's advocate) receive the estimate and the transcript so far, and return a turn of arguments. The code, not the model, decides the round and the role.
+- **The judge** receives the full transcript and must rule on every disputed line.
+- **Domain checks run on every answer**: unknown line item ids, rebutting someone who hasn't spoken, a verdict that skips a disputed line or can't be applied. A failed check is sent back to the model with the reason, so it can correct itself.
+- **The estimate is rendered once, deterministically, and marked for prompt caching**, so later turns reuse it cheaply.
+- **Refusals** opt into the API's server-side fallback (`fallbacks: "default"`). A final refusal surfaces as a typed error.
+- Agents depend on a small `StructuredLLM` protocol, not on the SDK, so all agent logic is tested with a scripted fake and no network.
+
+Try one agent on a sample (makes a real API call):
+
+```bash
+cd backend
+.venv/bin/python -m app.agents warehouse-slab --role engineer
+```
+
 ## Roadmap
 
 The project is built in small, reviewable pull requests:
 
 - [x] **1. Project setup**: FastAPI backend and React/Vite client skeletons, typed settings, linting, strict typing, tests, CI
 - [x] **2. Domain model**: Pydantic models for estimates, line items, arguments, rulings and reports, plus sample estimates
-- [ ] **3. Agents**: Claude client wrapper, role prompts and structured outputs for the estimator, engineer, advocate and judge
+- [x] **3. Agents**: Claude client wrapper, role prompts and structured outputs for the estimator, engineer, advocate and judge
 - [ ] **4. Debate graph**: LangGraph orchestration of rounds and judging, tested with a fake LLM
 - [ ] **5. Reports**: decision trail rendered to Markdown, HTML and JSON
 - [ ] **6. Web UI**: React screens to upload or pick an estimate, watch the debate stream live (SSE) and read the verdict
@@ -106,6 +125,8 @@ All settings are environment variables (see [`backend/.env.example`](backend/.en
 | Variable | Default | |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | — | Needed to run debates |
-| `COSTCOURT_DEBATER_MODEL` | `claude-sonnet-5-5` | Model for the three debaters |
+| `COSTCOURT_DEBATER_MODEL` | `claude-opus-5-5` | Model for the three debaters |
 | `COSTCOURT_JUDGE_MODEL` | `claude-opus-5-5` | Model for the judge |
+| `COSTCOURT_DEBATER_EFFORT` | `medium` | Thinking depth for debaters (`low` … `max`) |
+| `COSTCOURT_JUDGE_EFFORT` | `high` | Thinking depth for the judge |
 | `COSTCOURT_DEBATE_ROUNDS` | `2` | Number of rounds (1–5) |
