@@ -49,3 +49,17 @@ def test_unknown_sample_is_rejected(capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit):
         cli.main(["nope"])
     assert "invalid choice" in capsys.readouterr().err
+
+
+def test_demo_needs_no_key(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("COSTCOURT_DEMO_DELAY_S", "0")
+    cli.main(["warehouse-slab", "--demo"])
+    out = capsys.readouterr().out
+    assert "2 round(s)" in out and "+14.62%" in out
+
+
+def test_demo_for_unrecorded_sample() -> None:
+    with pytest.raises(SystemExit, match="no demo"):
+        cli.main(["office-fit-out", "--demo"])

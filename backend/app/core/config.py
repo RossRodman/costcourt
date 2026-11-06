@@ -68,6 +68,8 @@ class Settings(BaseSettings):
 
     # --- debate ------------------------------------------------------------
     debate_rounds: int = Field(default=2, ge=1, le=5)
+    demo_delay_s: float = Field(default=2.5, ge=0, le=30)
+    """Simulated thinking time per agent in demo debates."""
 
     @property
     def has_api_key(self) -> bool:

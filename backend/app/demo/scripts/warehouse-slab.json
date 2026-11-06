@@ -1,0 +1,247 @@
+{
+  "estimate_id": "warehouse-slab",
+  "rounds": [
+    {
+      "estimator": {
+        "summary": "The estimate follows our take-off and recent Front Range pricing. I stand behind the concrete, plant and finishing lines as priced.",
+        "arguments": [
+          {
+            "line_item_id": "02.020",
+            "stance": "support",
+            "claim": "420 m³ follows the structural take-off, which nets out the dock leveller pits.",
+            "reasoning": "The take-off deducts six dock leveller pits and the thickened recess at the loading apron, which together account for the gap between the gross slab volume and 420 m³."
+          },
+          {
+            "line_item_id": "02.040",
+            "stance": "support",
+            "claim": "Two pump days are enough because bays two and three can be poured back to back.",
+            "reasoning": "With an early start, bays two and three can share one pump day. The pump only needs to stand for the two pour mobilisations."
+          },
+          {
+            "line_item_id": "02.050",
+            "stance": "support",
+            "claim": "$9.80/m² matches our last two warehouse floors in the Front Range.",
+            "reasoning": "Both recent projects were 200 mm laser-screeded slabs of similar size, finished by the same crew, and closed out at $9.40-9.90/m²."
+          },
+          {
+            "line_item_id": "01.020",
+            "stance": "support",
+            "claim": "360 m³ of base is exactly 2,400 m² at 150 mm compacted.",
+            "reasoning": "2,400 m² × 0.15 m = 360 m³ compacted, which is how the supplier prices delivered crushed stone."
+          }
+        ]
+      },
+      "engineer": {
+        "summary": "The concrete volume and the quantities derived from it are understated, the pump is short of the pour sequence, and winter protection is missing.",
+        "arguments": [
+          {
+            "line_item_id": "02.020",
+            "stance": "increase",
+            "claim": "The scope has no pits: net volume is 480 m³, so allow 504 m³ with waste.",
+            "reasoning": "The scope describes a full 60 × 40 m slab at 200 mm: 2,400 × 0.20 = 480 m³. The pits belong to a later phase. With the subgrade at ±25 mm, a 5% allowance for over-depth and waste is the minimum: 480 × 1.05 = 504 m³.",
+            "proposed_quantity": 504,
+            "rebuts": "estimator"
+          },
+          {
+            "line_item_id": "02.030",
+            "stance": "increase",
+            "claim": "Fibre dosage follows the concrete: 504 m³ × 25 kg/m³ = 12,600 kg.",
+            "reasoning": "Steel fibre is batched per cubic metre delivered, so the fibre line must use the same volume as the concrete line, waste included.",
+            "proposed_quantity": 12600
+          },
+          {
+            "line_item_id": "02.010",
+            "stance": "increase",
+            "claim": "A 15 mil retarder needs laps and turn-ups: allow 10%, so 2,640 m².",
+            "reasoning": "Sheets are lapped 150 mm and turned up at the perimeter and penetrations. On a slab this size, about 10% over plan area is standard, and the note on the line confirms no lap was allowed.",
+            "proposed_quantity": 2640
+          },
+          {
+            "line_item_id": "02.040",
+            "stance": "increase",
+            "claim": "Three bays mean three pours, so the pump is needed for three days.",
+            "reasoning": "FM2 floors are not poured back to back: each bay needs a full day of finishing before the next pour. The laser screed is already hired for three days, so the pump line should match.",
+            "proposed_quantity": 3,
+            "rebuts": "estimator"
+          },
+          {
+            "line_item_id": null,
+            "stance": "missing",
+            "claim": "Winter protection is not priced, although the scope says winter pours are possible.",
+            "reasoning": "Pouring a 200 mm slab in Denver winter needs ground thaw, heated enclosures or insulated blankets, and possibly hot water and accelerator. None of this appears in the estimate."
+          }
+        ]
+      },
+      "advocate": {
+        "summary": "The finishing rate cannot deliver FM2, and the concrete rate is stale for winter supply. To be fair, the joint quantity is overstated.",
+        "arguments": [
+          {
+            "line_item_id": "02.050",
+            "stance": "increase",
+            "claim": "FM2 for very-narrow-aisle racking costs $11-12/m² to finish in Denver, not $9.80.",
+            "reasoning": "FM2 needs extra power-trowel passes, tighter screed control and a floor-flatness survey per bay. Local crews quote this as a premium over a standard warehouse finish.",
+            "proposed_unit_rate": 11.5,
+            "rebuts": "estimator"
+          },
+          {
+            "line_item_id": "02.020",
+            "stance": "increase",
+            "claim": "$165/m³ ignores winter supply surcharges: allow $175/m³.",
+            "reasoning": "Denver suppliers add hot-water and accelerator surcharges of roughly $8-12/m³ from November to March. A schedule that allows winter pours should price them in.",
+            "proposed_unit_rate": 175
+          },
+          {
+            "line_item_id": "02.040",
+            "stance": "increase",
+            "claim": "I agree with the engineer: one pump day per bay.",
+            "reasoning": "A crew that has to wait on a shared pump day would be standing idle, which costs more than the extra pump day.",
+            "proposed_quantity": 3,
+            "rebuts": "estimator"
+          },
+          {
+            "line_item_id": "02.060",
+            "stance": "decrease",
+            "claim": "860 m of saw-cut is generous: a 6 m joint grid on 60 × 40 m needs about 720 m.",
+            "reasoning": "Nine joint lines 40 m long plus six lines 60 m long give 9 × 40 + 6 × 60 = 720 m. The extra 140 m looks like perimeter isolation joints counted twice.",
+            "proposed_quantity": 720
+          },
+          {
+            "line_item_id": "03.010",
+            "stance": "support",
+            "claim": "Three laser screed days is right for a three-bay pour.",
+            "reasoning": "One day of screed per bay, with set-up included in the hire rate."
+          }
+        ]
+      }
+    },
+    {
+      "estimator": {
+        "summary": "I concede the volume and the joint length. Our supplier quote caps the concrete rate below the advocate's figure, and I maintain the finishing rate.",
+        "arguments": [
+          {
+            "line_item_id": "02.020",
+            "stance": "increase",
+            "claim": "I concede the volume: the pits are phase two, so 504 m³ is right.",
+            "reasoning": "I re-checked the drawings. The leveller pits are in the phase-two package and not in this scope, so the full 480 m³ plus 5% waste stands.",
+            "proposed_quantity": 504,
+            "rebuts": "engineer"
+          },
+          {
+            "line_item_id": "02.020",
+            "stance": "increase",
+            "claim": "Our supplier quote is $168/m³ including the winter surcharge.",
+            "reasoning": "The quote, valid until March, fixes the price at $168/m³ delivered, with hot water included. That is the right figure, not a market average.",
+            "proposed_unit_rate": 168,
+            "rebuts": "advocate"
+          },
+          {
+            "line_item_id": "02.060",
+            "stance": "decrease",
+            "claim": "I agree with the advocate that 720 m is the right joint length.",
+            "reasoning": "The perimeter isolation joint is priced separately in the formwork package, so 860 m counted it twice.",
+            "proposed_quantity": 720,
+            "rebuts": "advocate"
+          },
+          {
+            "line_item_id": "02.050",
+            "stance": "support",
+            "claim": "FM2 is achievable at $9.80; the flatness survey sits in general conditions.",
+            "reasoning": "Our finishing crew has delivered FM2 at this rate before. The F-number survey is carried in the contractor's general conditions, not in the finishing line."
+          }
+        ]
+      },
+      "engineer": {
+        "summary": "With the volume settled, my open points are the FM2 finishing allowance and winter protection.",
+        "arguments": [
+          {
+            "line_item_id": "02.050",
+            "stance": "increase",
+            "claim": "No general-conditions line exists in this estimate: FM2 needs at least $11.00/m².",
+            "reasoning": "The estimate has no general-conditions line, so the survey and the extra trowel passes have to sit in the finishing rate. $11.00/m² covers them without the advocate's full premium.",
+            "proposed_unit_rate": 11,
+            "rebuts": "estimator"
+          },
+          {
+            "line_item_id": null,
+            "stance": "missing",
+            "claim": "Winter protection is still unpriced: allow about $18,000 or get a quote.",
+            "reasoning": "Heated enclosures and blankets for three bays, plus ground thaw, typically cost $6-7/m² in Denver. That is material at this contract size."
+          }
+        ]
+      },
+      "advocate": {
+        "summary": "The estimator's quote is credible, so I move to the middle on rate. The contingency is still too thin for the risk this scope carries.",
+        "arguments": [
+          {
+            "line_item_id": "02.020",
+            "stance": "increase",
+            "claim": "Accept the quote, but add the pump-mix premium: $170/m³.",
+            "reasoning": "Pumped mixes carry a small premium for aggregate grading and slump, usually $2/m³, and the $168 quote is for a standard mix.",
+            "proposed_unit_rate": 170,
+            "rebuts": "estimator"
+          },
+          {
+            "line_item_id": null,
+            "stance": "missing",
+            "claim": "A 3% contingency does not cover winter and flatness risk; 5% would.",
+            "reasoning": "A failed flatness survey means grinding or a topping. With winter pours possible as well, a contractor would carry at least 5% on this scope."
+          }
+        ]
+      }
+    }
+  ],
+  "verdict": {
+    "summary": "The estimate understates the concrete and every quantity derived from it, and is short one pump day. Both errors are well evidenced and partly conceded. The FM2 finishing premium is justified in part. The joint length was overstated, which offsets a small part of the increase. Winter protection and contingency are real gaps that need a quote and a decision from the client; they are not line changes.",
+    "rulings": [
+      {
+        "line_item_id": "02.020",
+        "decision": "adjusted",
+        "approved_quantity": 504,
+        "approved_unit_rate": 168,
+        "reasoning": "The scope excludes the pits, so the net volume is 480 m³ plus 5% waste, which the estimator conceded. The supplier quote of $168 includes the winter surcharge and is better evidence than a market average or an unquoted pump premium.",
+        "sided_with": ["engineer", "estimator"]
+      },
+      {
+        "line_item_id": "02.030",
+        "decision": "adjusted",
+        "approved_quantity": 12600,
+        "reasoning": "Fibre is dosed per cubic metre, so it follows the approved concrete volume: 504 × 25 kg/m³.",
+        "sided_with": ["engineer"]
+      },
+      {
+        "line_item_id": "02.010",
+        "decision": "adjusted",
+        "approved_quantity": 2640,
+        "reasoning": "The line's own note says it has no lap allowance. Ten percent for laps and turn-ups is standard and was not contested.",
+        "sided_with": ["engineer"]
+      },
+      {
+        "line_item_id": "02.040",
+        "decision": "adjusted",
+        "approved_quantity": 3,
+        "reasoning": "Three bays poured on separate days need three pump days, which also matches the three-day screed hire. Pouring back to back is not credible for an FM2 finish.",
+        "sided_with": ["engineer", "advocate"]
+      },
+      {
+        "line_item_id": "02.050",
+        "decision": "adjusted",
+        "approved_unit_rate": 10.8,
+        "reasoning": "The estimate has no general-conditions line, so the flatness survey and extra passes belong in this rate. $10.80 covers them. The $11.50 premium was not supported by a quote.",
+        "sided_with": ["engineer", "advocate"]
+      },
+      {
+        "line_item_id": "02.060",
+        "decision": "adjusted",
+        "approved_quantity": 720,
+        "reasoning": "A 6 m grid gives 720 m of saw-cut. The estimator confirmed the perimeter joint is priced elsewhere.",
+        "sided_with": ["advocate", "estimator"]
+      }
+    ],
+    "confidence": 0.82,
+    "recommendations": [
+      "Get a priced quote for winter protection (enclosures, blankets, ground thaw) before contract; the engineer's estimate is about $18,000.",
+      "Raise contingency from 3% to 5% while winter pours and the FM2 survey remain open risks.",
+      "Make the FM2 survey and the remedial-grinding responsibility explicit in the finishing subcontract."
+    ]
+  }
+}
