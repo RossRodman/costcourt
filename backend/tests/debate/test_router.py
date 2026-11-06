@@ -9,7 +9,7 @@ import pytest
 from fastapi import FastAPI
 
 from app.core.config import Settings
-from app.debate.router import get_panel
+from app.debate.router import get_panel_factory
 from app.debate.sessions import DebateManager
 from app.main import create_app
 from tests.factories import estimate, line_item
@@ -23,8 +23,8 @@ def llm() -> ScriptedLLM:
 
 @pytest.fixture
 def app(settings: Settings, llm: ScriptedLLM) -> FastAPI:
-    app = create_app(settings.model_copy(update={"debate_rounds": 1}))
-    app.dependency_overrides[get_panel] = lambda: scripted_panel(llm)
+    app = create_app(settings.model_copy(update={"debate_rounds": 1, "demo_delay_s": 0}))
+    app.dependency_overrides[get_panel_factory] = lambda: lambda: scripted_panel(llm)
     return app
 
 
@@ -80,6 +80,7 @@ async def test_debate_on_an_uploaded_estimate(api: httpx.AsyncClient) -> None:
     custom = estimate(line_item(id=DISPUTED_ID), title="My garage slab")
     debate = await start(api, estimate=custom.model_dump(mode="json"), rounds=1)
     assert debate["estimate_title"] == "My garage slab"
+    assert debate["estimate"]["items"][0]["id"] == DISPUTED_ID
 
     await api.get(f"/debates/{debate['id']}/events")
     assert (await api.get(f"/debates/{debate['id']}")).json()["status"] == "completed"
@@ -100,6 +101,7 @@ async def test_list_debates_without_reports(api: httpx.AsyncClient) -> None:
     listed = (await api.get("/debates")).json()
     assert [d["id"] for d in listed] == [debate["id"]]
     assert listed[0]["report"] is None
+    assert listed[0]["estimate"] is None
 
 
 @pytest.mark.parametrize(
@@ -130,3 +132,30 @@ async def test_no_api_key_is_503(settings: Settings) -> None:
         response = await api.post("/debates", json={"sample_id": "warehouse-slab"})
     assert response.status_code == 503
     assert "ANTHROPIC_API_KEY" in response.json()["detail"]
+
+
+async def test_demo_debate_needs_no_api_key(settings: Settings) -> None:
+    app = create_app(settings.model_copy(update={"demo_delay_s": 0}))
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test/api") as api:
+        assert (await api.get("/debates/demos")).json() == ["warehouse-slab"]
+
+        debate = await start(api, sample_id="warehouse-slab", demo=True, rounds=5)
+        assert debate["demo"] is True
+        assert debate["rounds"] == 2  # the recording's length, not the requested rounds
+
+        messages = parse_sse((await api.get(f"/debates/{debate['id']}/events")).text)
+        assert messages[-1]["event"] == "debate_completed"
+        report = messages[-1]["data"]["report"]
+        assert set(report["models"].values()) == {"costcourt-demo"}
+        assert report["impact"]["delta_pct"] > 0
+
+
+async def test_demo_only_for_recorded_samples(api: httpx.AsyncClient) -> None:
+    response = await api.post("/debates", json={"sample_id": "office-fit-out", "demo": True})
+    assert response.status_code == 404
+    assert "no demo" in response.json()["detail"]
+
+    custom = estimate().model_dump(mode="json")
+    response = await api.post("/debates", json={"estimate": custom, "demo": True})
+    assert response.status_code == 422

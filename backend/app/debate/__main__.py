@@ -1,6 +1,7 @@
 """Run a full debate in the terminal (real Claude calls).
 
 .venv/bin/python -m app.debate warehouse-slab --rounds 1
+.venv/bin/python -m app.debate warehouse-slab --demo   # no API key needed
 """
 
 from __future__ import annotations
@@ -27,6 +28,7 @@ from app.debate.events import (
 )
 from app.debate.models import Role
 from app.debate.runner import run_debate
+from app.demo import DemoNotAvailableError, demo_panel
 from app.estimates.catalog import EstimateNotFoundError, get_sample_catalog
 
 
@@ -63,10 +65,13 @@ def _print_event(event: DebateEvent) -> None:
             print(f"\nDebate failed: {event.error}", file=sys.stderr)
 
 
-async def _run(sample_id: str, rounds: int) -> bool:
+async def _run(sample_id: str, rounds: int, *, demo: bool) -> bool:
     settings = get_settings()
     estimate = get_sample_catalog().get(sample_id)
-    panel = build_panel(settings)
+    if demo:
+        panel, rounds = demo_panel(sample_id, delay_s=settings.demo_delay_s)
+    else:
+        panel = build_panel(settings)
     ok = False
     async for event in run_debate(panel, estimate, rounds=rounds):
         _print_event(event)
@@ -80,12 +85,15 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="python -m app.debate", description=__doc__)
     parser.add_argument("sample", choices=samples)
     parser.add_argument("--rounds", type=int, choices=range(1, 6), default=settings.debate_rounds)
+    parser.add_argument(
+        "--demo", action="store_true", help="replay the recorded debate (no API key needed)"
+    )
     args = parser.parse_args(argv)
 
     configure_logging(settings.log_level)
     try:
-        ok = asyncio.run(_run(args.sample, args.rounds))
-    except (LLMError, EstimateNotFoundError) as exc:
+        ok = asyncio.run(_run(args.sample, args.rounds, demo=args.demo))
+    except (LLMError, EstimateNotFoundError, DemoNotAvailableError) as exc:
         sys.exit(f"error: {exc}")
     if not ok:
         sys.exit(1)

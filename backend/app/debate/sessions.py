@@ -48,11 +48,12 @@ class DebateNotFoundError(KeyError):
 class DebateSession:
     """One debate: its input, its event log and its outcome."""
 
-    def __init__(self, estimate: Estimate, rounds: int) -> None:
+    def __init__(self, estimate: Estimate, rounds: int, *, demo: bool = False) -> None:
         self.id = uuid4()
         self.created_at = datetime.now(UTC)
         self.estimate = estimate
         self.rounds = rounds
+        self.demo = demo
         self.events: list[DebateEvent] = []
         self._changed = asyncio.Condition()
 
@@ -112,8 +113,10 @@ class DebateManager:
         self._max_sessions = max_sessions
         self._runner = runner
 
-    def start(self, panel: Panel, estimate: Estimate, *, rounds: int) -> DebateSession:
-        session = DebateSession(estimate, rounds)
+    def start(
+        self, panel: Panel, estimate: Estimate, *, rounds: int, demo: bool = False
+    ) -> DebateSession:
+        session = DebateSession(estimate, rounds, demo=demo)
         self._sessions[session.id] = session
         self._evict()
         task = asyncio.create_task(self._run(session, panel), name=f"debate-{session.id}")

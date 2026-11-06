@@ -26,7 +26,7 @@ The debate runs as a **LangGraph** state machine over a configurable number of r
 | | |
 |---|---|
 | **Backend** | Python 3.11+, FastAPI, LangGraph, Anthropic SDK (Claude), Pydantic v2 |
-| **Client** | React 19, TypeScript, Vite, Tailwind CSS v4, lucide icons |
+| **Client** | React 19, TypeScript, Vite, React Router, TanStack Query, Tailwind CSS v4, lucide icons |
 | **Quality** | ruff, mypy (strict), pytest · oxlint, Prettier, Vitest + Testing Library · pre-commit · GitHub Actions |
 
 ## Quick start
@@ -36,7 +36,7 @@ Requires Python 3.11+ and Node 20.19+.
 ```bash
 # Backend: http://127.0.0.1:8000/api/docs
 cd backend
-cp .env.example .env              # add your ANTHROPIC_API_KEY
+cp .env.example .env              # add your ANTHROPIC_API_KEY (optional for the demo)
 python3 -m venv .venv
 .venv/bin/pip install -e ".[dev]"
 .venv/bin/costcourt
@@ -46,6 +46,8 @@ cd client
 npm ci
 npm run dev
 ```
+
+**No API key yet?** Open the client, pick the warehouse sample and click **Watch a demo**. It replays a recorded debate through the real pipeline (graph, domain checks, live stream, verdict), so you can see the whole flow before spending tokens.
 
 ### Checks (same as CI)
 
@@ -69,9 +71,19 @@ cd client && npm run lint && npm run typecheck && npm test
 │   └── tests/
 ├── client/                   # React + Vite single-page app
 │   └── src/
-│       ├── components/
-│       ├── hooks/
-│       └── lib/              # typed API client, utils
+│       ├── App.tsx           # root component: providers + router
+│       ├── app/              # routes, query client
+│       ├── api/              # typed API client
+│       ├── features/         # one folder per screen
+│       │   ├── home/         #   pages/ components/ hooks/
+│       │   ├── debate/       #   pages/ components/ hooks/ utils/ (event reducer)
+│       │   └── notFound/
+│       ├── components/       # shared: ui/, layout/, estimateTable/, roleAvatar/, …
+│       ├── hooks/            # shared hooks (useHealth)
+│       ├── constants/        # roles, query keys, links
+│       ├── types/            # API types (estimate, debate)
+│       ├── utils/            # formatting, class names
+│       └── styled/           # shared typography classes
 └── .github/workflows/ci.yml  # backend + client jobs
 ```
 
@@ -146,6 +158,13 @@ curl -s -X POST localhost:8000/api/debates -H 'content-type: application/json' \
 curl -N localhost:8000/api/debates/<id>/events
 ```
 
+## Web UI
+
+- **Home:** choose one of the sample estimates (each hides a few realistic mistakes) or upload your own JSON. The server validates it before anything is spent. Then pick the number of rounds and start.
+- **Live debate:** turns appear as each agent finishes. Every argument shows its stance, the line it targets, and the proposed figures next to the original ones. While an agent is working, a "thinking" card is shown, and a side panel shows who has spoken.
+- **Verdict:** the judge's summary, the cost impact and confidence, a ruling for each disputed line (with whose argument it followed), recommendations, and a side-by-side revised estimate.
+- **Under the hood:** state is derived from the event stream by one pure reducer (`features/debate/utils/debateState.ts`). Reconnects resume from `Last-Event-ID`, so refreshing the page replays the debate.
+
 ## Roadmap
 
 The project is built in small, reviewable pull requests:
@@ -154,8 +173,8 @@ The project is built in small, reviewable pull requests:
 - [x] **2. Domain model**: Pydantic models for estimates, line items, arguments, rulings and reports, plus sample estimates
 - [x] **3. Agents**: Claude client wrapper, role prompts and structured outputs for the estimator, engineer, advocate and judge
 - [x] **4. Debate graph**: LangGraph orchestration of rounds and judging, background debates with a live SSE event stream, tested with a fake LLM
-- [ ] **5. Reports**: decision trail rendered to Markdown, HTML and JSON
-- [ ] **6. Web UI**: React screens to upload or pick an estimate, watch the debate stream live (SSE) and read the verdict
+- [x] **5. Web UI**: pick or upload an estimate, watch the debate live (SSE), read the verdict and the revised estimate. Includes a demo mode that needs no API key
+- [ ] **6. Reports**: decision trail exported to Markdown, HTML and JSON
 - [ ] **7. Polish**: Docker, screenshots, docs
 
 ## Configuration
@@ -170,3 +189,4 @@ All settings are environment variables (see [`backend/.env.example`](backend/.en
 | `COSTCOURT_DEBATER_EFFORT` | `medium` | Thinking depth for debaters (`low` … `max`) |
 | `COSTCOURT_JUDGE_EFFORT` | `high` | Thinking depth for the judge |
 | `COSTCOURT_DEBATE_ROUNDS` | `2` | Number of rounds (1–5) |
+| `COSTCOURT_DEMO_DELAY_S` | `2.5` | Simulated thinking time per agent in demo replays |

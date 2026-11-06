@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
+from functools import partial
 from typing import Annotated, Any
 from uuid import UUID
 
@@ -15,6 +16,7 @@ from app.api.deps import SettingsDep
 from app.debate.events import debate_event_adapter
 from app.debate.schemas import DebateOut, DebateRequest
 from app.debate.sessions import DebateManager, DebateNotFoundError, DebateSession
+from app.demo import DemoNotAvailableError, demo_panel, demo_scripts
 from app.estimates.catalog import EstimateNotFoundError
 from app.estimates.router import CatalogDep
 
@@ -28,16 +30,20 @@ def get_debates(request: Request) -> DebateManager:
     return manager
 
 
-def get_panel(settings: SettingsDep) -> Panel:
-    """The agents for a new debate. Overridden with a scripted LLM in tests."""
-    try:
-        return build_panel(settings)
-    except LLMNotConfiguredError as exc:
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc)) from exc
+PanelFactory = Callable[[], Panel]
+
+
+def get_panel_factory(settings: SettingsDep) -> PanelFactory:
+    """Builds the Claude-backed agents for a new debate. Overridden in tests.
+
+    A factory rather than a panel, so a missing API key only matters for
+    debates that actually call Claude (not for demo replays).
+    """
+    return partial(build_panel, settings)
 
 
 DebatesDep = Annotated[DebateManager, Depends(get_debates)]
-PanelDep = Annotated[Panel, Depends(get_panel)]
+PanelFactoryDep = Annotated[PanelFactory, Depends(get_panel_factory)]
 
 
 def _session(debates: DebateManager, debate_id: UUID) -> DebateSession:
@@ -51,7 +57,7 @@ def _session(debates: DebateManager, debate_id: UUID) -> DebateSession:
     "",
     status_code=status.HTTP_202_ACCEPTED,
     responses={
-        404: {"description": "Unknown sample id"},
+        404: {"description": "Unknown sample id, or no demo for that sample"},
         503: {"description": "No Anthropic API key configured"},
     },
 )
@@ -61,7 +67,7 @@ async def start_debate(
     debates: DebatesDep,
     catalog: CatalogDep,
     settings: SettingsDep,
-    panel: PanelDep,
+    make_panel: PanelFactoryDep,
 ) -> DebateOut:
     """Start a debate in the background. Follow it at `/debates/{id}/events`."""
     if body.estimate is not None:
@@ -72,7 +78,19 @@ async def start_debate(
         except EstimateNotFoundError as exc:
             raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
 
-    session = debates.start(panel, estimate, rounds=body.rounds or settings.debate_rounds)
+    if body.demo:
+        try:
+            panel, rounds = demo_panel(estimate.id, delay_s=settings.demo_delay_s)
+        except DemoNotAvailableError as exc:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+    else:
+        try:
+            panel = make_panel()
+        except LLMNotConfiguredError as exc:
+            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc)) from exc
+        rounds = body.rounds or settings.debate_rounds
+
+    session = debates.start(panel, estimate, rounds=rounds, demo=body.demo)
     response.headers["Location"] = f"{router.prefix}/{session.id}"
     return DebateOut.of(session)
 
@@ -80,7 +98,13 @@ async def start_debate(
 @router.get("")
 async def list_debates(debates: DebatesDep) -> list[DebateOut]:
     """Recent debates, newest first (without the full reports)."""
-    return [DebateOut.of(s, include_report=False) for s in debates.list()]
+    return [DebateOut.of(s, detail=False) for s in debates.list()]
+
+
+@router.get("/demos")
+async def list_demos() -> list[str]:
+    """Sample ids that have a recorded demo debate (playable without an API key)."""
+    return sorted(demo_scripts())
 
 
 @router.get("/{debate_id}", responses=NOT_FOUND)
