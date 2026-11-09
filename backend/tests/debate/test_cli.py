@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from app.agents.llm import LLMUnavailableError
@@ -63,3 +65,23 @@ def test_demo_needs_no_key(
 def test_demo_for_unrecorded_sample() -> None:
     with pytest.raises(SystemExit, match="no demo"):
         cli.main(["office-fit-out", "--demo"])
+
+
+def test_saves_the_report_and_writes_an_export(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
+    monkeypatch.setenv("COSTCOURT_DEMO_DELAY_S", "0")
+
+    cli.main(["warehouse-slab", "--demo", "--report", "out.md"])
+
+    out = capsys.readouterr().out
+    [saved] = (tmp_path / "data" / "reports").glob("*.json")
+    assert f"Report saved to data/reports/{saved.name}" in out
+    assert "Report written to out.md" in out
+    assert (tmp_path / "out.md").read_text(encoding="utf-8").startswith("# CostCourt report")
+
+
+def test_report_path_needs_a_known_extension(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit):
+        cli.main(["warehouse-slab", "--demo", "--report", "out.pdf"])
+    assert "unknown report extension '.pdf'" in capsys.readouterr().err

@@ -11,9 +11,16 @@ interface DebateHeaderProps {
   location: string | null | undefined;
   demo: boolean;
   state: DebateState;
+  back?: { to: string; label: string };
 }
 
-export function DebateHeader({ title, location, demo, state }: DebateHeaderProps) {
+export function DebateHeader({
+  title,
+  location,
+  demo,
+  state,
+  back = { to: "/", label: "New debate" },
+}: DebateHeaderProps) {
   const progress =
     state.status !== "running" || !state.totalRounds
       ? null
@@ -24,11 +31,11 @@ export function DebateHeader({ title, location, demo, state }: DebateHeaderProps
   return (
     <header className="space-y-4">
       <Link
-        to="/"
+        to={back.to}
         className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink"
       >
         <ArrowLeft className="size-4" aria-hidden />
-        New debate
+        {back.label}
       </Link>
       <div className="flex flex-wrap items-center gap-3">
         <StatusBadge status={state.status} />

@@ -8,6 +8,7 @@ from uuid import uuid4
 import pytest
 
 from app.debate.events import DebateEvent, DebateFailed, RoundStarted
+from app.debate.models import DebateReport
 from app.debate.sessions import DebateManager, DebateNotFoundError, DebateSession, DebateStatus
 from tests.factories import estimate
 from tests.fakes import ScriptedLLM, debate_script, scripted_panel
@@ -131,3 +132,27 @@ def test_unknown_debate() -> None:
     debate_id = uuid4()
     with pytest.raises(DebateNotFoundError, match=str(debate_id)):
         manager().get(debate_id)
+
+
+async def test_report_is_saved_before_completion_is_announced() -> None:
+    saved: list[DebateReport] = []
+    debates = manager(save_report=saved.append)
+    session = debates.start(scripted_panel(ScriptedLLM(debate_script(1))), EST, rounds=1)
+
+    async for _, event in session.subscribe():
+        if event.type == "debate_completed":
+            assert saved == [event.report]
+
+    assert saved == [session.report]
+
+
+async def test_failed_save_does_not_fail_the_debate(caplog: pytest.LogCaptureFixture) -> None:
+    def broken(report: DebateReport) -> None:
+        raise OSError("disk full")
+
+    debates = manager(save_report=broken)
+    session = debates.start(scripted_panel(ScriptedLLM(debate_script(1))), EST, rounds=1)
+    await finish(session)
+
+    assert session.status is DebateStatus.COMPLETED
+    assert "could not save the report" in caplog.text

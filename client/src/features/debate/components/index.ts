@@ -3,6 +3,7 @@ export * from "./debateHeader";
 export * from "./debateSidebar";
 export * from "./figureChanges";
 export * from "./participants";
+export * from "./reportExport";
 export * from "./revisedEstimate";
 export * from "./thinkingCard";
 export * from "./transcript";

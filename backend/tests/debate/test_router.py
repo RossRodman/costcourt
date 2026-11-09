@@ -159,3 +159,17 @@ async def test_demo_only_for_recorded_samples(api: httpx.AsyncClient) -> None:
     custom = estimate().model_dump(mode="json")
     response = await api.post("/debates", json={"estimate": custom, "demo": True})
     assert response.status_code == 422
+
+
+async def test_completed_debate_is_saved_as_a_report(api: httpx.AsyncClient) -> None:
+    debate = await start(api, sample_id="warehouse-slab", demo=True)
+    await api.get(f"/debates/{debate['id']}/events")  # wait for the end
+
+    [summary] = (await api.get("/reports")).json()
+    assert summary["id"] == debate["id"]
+    assert summary["demo"] is True
+    assert summary["delta_pct"] == 14.62
+
+    exported = await api.get(f"/reports/{debate['id']}/export", params={"format": "markdown"})
+    assert exported.status_code == 200
+    assert exported.text.startswith("# CostCourt report: Warehouse slab-on-grade")

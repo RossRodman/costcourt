@@ -2,6 +2,9 @@
 
 .venv/bin/python -m app.debate warehouse-slab --rounds 1
 .venv/bin/python -m app.debate warehouse-slab --demo   # no API key needed
+.venv/bin/python -m app.debate warehouse-slab --demo --report report.html
+
+Completed reports are also saved to COSTCOURT_REPORTS_DIR (see `python -m app.reports`).
 """
 
 from __future__ import annotations
@@ -9,6 +12,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import sys
+from pathlib import Path
 
 from app.agents import build_panel
 from app.agents.context import ROLE_TITLES
@@ -26,10 +30,12 @@ from app.debate.events import (
     TurnStarted,
     VerdictReached,
 )
-from app.debate.models import Role
+from app.debate.models import DebateReport, Role
 from app.debate.runner import run_debate
 from app.demo import DemoNotAvailableError, demo_panel
 from app.estimates.catalog import EstimateNotFoundError, get_sample_catalog
+from app.reports.export import ReportFormat, export_report
+from app.reports.store import ReportStore
 
 
 def _print_event(event: DebateEvent) -> None:
@@ -65,18 +71,29 @@ def _print_event(event: DebateEvent) -> None:
             print(f"\nDebate failed: {event.error}", file=sys.stderr)
 
 
-async def _run(sample_id: str, rounds: int, *, demo: bool) -> bool:
+async def _run(sample_id: str, rounds: int, *, demo: bool) -> DebateReport | None:
     settings = get_settings()
     estimate = get_sample_catalog().get(sample_id)
     if demo:
         panel, rounds = demo_panel(sample_id, delay_s=settings.demo_delay_s)
     else:
         panel = build_panel(settings)
-    ok = False
+    report = None
     async for event in run_debate(panel, estimate, rounds=rounds):
         _print_event(event)
-        ok = isinstance(event, DebateCompleted)
-    return ok
+        if isinstance(event, DebateCompleted):
+            report = event.report
+    return report
+
+
+def _report_format(path: str) -> Path:
+    """argparse type: a path whose extension is a known report format."""
+    out = Path(path)
+    try:
+        ReportFormat.from_extension(out.suffix)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(str(exc)) from None
+    return out
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -88,15 +105,28 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument(
         "--demo", action="store_true", help="replay the recorded debate (no API key needed)"
     )
+    parser.add_argument(
+        "--report",
+        type=_report_format,
+        metavar="PATH",
+        help="also write the report to PATH (.md, .html or .json)",
+    )
     args = parser.parse_args(argv)
 
     configure_logging(settings.log_level)
     try:
-        ok = asyncio.run(_run(args.sample, args.rounds, demo=args.demo))
+        report = asyncio.run(_run(args.sample, args.rounds, demo=args.demo))
     except (LLMError, EstimateNotFoundError, DemoNotAvailableError) as exc:
         sys.exit(f"error: {exc}")
-    if not ok:
+    if report is None:
         sys.exit(1)
+
+    saved = ReportStore(settings.reports_dir).save(report)
+    print(f"Report saved to {saved}")
+    if args.report:
+        exported = export_report(report, ReportFormat.from_extension(args.report.suffix))
+        args.report.write_text(exported.content, encoding="utf-8")
+        print(f"Report written to {args.report}")
 
 
 if __name__ == "__main__":

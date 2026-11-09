@@ -18,8 +18,8 @@ dist/
 # Secrets
 .env
 
-# Generated reports
-reports/
+# Saved debate reports (COSTCOURT_REPORTS_DIR)
+backend/data/
 
 # OS / editors
 .DS_Store
