@@ -61,3 +61,15 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+
+  docker:
+    name: Docker images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build backend image
+        run: docker build -t costcourt-backend backend
+      - name: Build client image
+        run: docker build -t costcourt-client client
+      - name: Validate compose file
+        run: docker compose config --quiet
