@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
 from pydantic import Field, SecretStr
@@ -70,6 +71,10 @@ class Settings(BaseSettings):
     debate_rounds: int = Field(default=2, ge=1, le=5)
     demo_delay_s: float = Field(default=2.5, ge=0, le=30)
     """Simulated thinking time per agent in demo debates."""
+
+    # --- reports -----------------------------------------------------------
+    reports_dir: Path = Path("data/reports")
+    """Where completed debate reports are saved (relative to the working directory)."""
 
     @property
     def has_api_key(self) -> bool:

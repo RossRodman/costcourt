@@ -1,4 +1,12 @@
-import type { Debate, DebateRequest, Estimate, EstimateSummary } from "@/types";
+import type {
+  Debate,
+  DebateReport,
+  DebateRequest,
+  Estimate,
+  EstimateSummary,
+  ReportFormat,
+  ReportSummary,
+} from "@/types";
 
 export interface Health {
   status: "ok";
@@ -77,4 +85,12 @@ export const api = {
   debate: (id: string) => request<Debate>(`/debates/${encodeURIComponent(id)}`),
   startDebate: (body: DebateRequest) => post<Debate>("/debates", body),
   eventsUrl: (id: string) => `/api/debates/${encodeURIComponent(id)}/events`,
+
+  reports: () => request<ReportSummary[]>("/reports"),
+  report: (id: string) => request<DebateReport>(`/reports/${encodeURIComponent(id)}`),
+  reportExportUrl: (id: string, format: ReportFormat, opts: { download?: boolean } = {}) => {
+    const params = new URLSearchParams({ format });
+    if (opts.download) params.set("download", "true");
+    return `/api/reports/${encodeURIComponent(id)}/export?${params}`;
+  },
 };

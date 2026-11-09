@@ -12,12 +12,12 @@ export function Transcript({ state, estimate }: TranscriptProps) {
   const rounds = turnsByRound(state.turns);
 
   if (state.thinking && !rounds.has(state.thinking.round)) {
-    rounds.set(state.thinking.round, [])
-  };
+    rounds.set(state.thinking.round, []);
+  }
 
   if (state.round > 0 && !rounds.has(state.round)) {
-    rounds.set(state.round, [])
-  };
+    rounds.set(state.round, []);
+  }
 
   return (
     <div className="space-y-10">

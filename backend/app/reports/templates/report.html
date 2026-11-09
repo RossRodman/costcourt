@@ -1,0 +1,304 @@
+<!doctype html>
+{% set estimate = report.estimate %}
+{% set revised = report.revised_estimate %}
+{% set impact = report.impact %}
+{% set cur = estimate.currency %}
+{% macro role_tag(role) %}<span class="tag role role-{{ role.value }}">{{ role | role }}</span>{% endmacro %}
+{% macro argument(entry, in_transcript) %}
+{% set arg = entry.argument %}
+<li class="argument role-{{ entry.role.value }}">
+  <p class="claim">
+    {% if not in_transcript %}{{ role_tag(entry.role) }} <span class="muted">round {{ entry.round }}</span>{% endif %}
+    {% if in_transcript and arg.line_item_id %}<code>{{ arg.line_item_id }}</code>{% endif %}
+    <span class="tag stance-{{ arg.stance.value }}">{{ arg.stance | stance }}</span>
+    {{ arg.claim }}
+  </p>
+  {% if in_transcript %}<p class="reasoning">{{ arg.reasoning }}</p>{% endif %}
+  {% set proposes = arg | proposal %}
+  {% if proposes or arg.rebuts %}
+  <p class="muted small">{{ proposes }}{% if proposes and arg.rebuts %} · {% endif %}{% if arg.rebuts %}Answers the {{ (arg.rebuts | role).lower() }}{% endif %}</p>
+  {% endif %}
+</li>
+{% endmacro %}
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="CostCourt {{ version }}">
+<title>CostCourt report: {{ estimate.title }}</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #ffffff;
+    --surface: #f6f7f9;
+    --line: #e2e5eb;
+    --ink: #161a22;
+    --muted: #5b6272;
+    --up: #b45309;
+    --down: #0369a1;
+    --estimator: #b45309;
+    --engineer: #0369a1;
+    --advocate: #047857;
+    --judge: #6d28d9;
+  }
+  @media screen and (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --bg: #0b0d12;
+      --surface: #12151c;
+      --line: #262b36;
+      --ink: #e8eaf0;
+      --muted: #9aa1b2;
+      --up: #fbbf24;
+      --down: #38bdf8;
+      --estimator: #f5a524;
+      --engineer: #38bdf8;
+      --advocate: #34d399;
+      --judge: #c4b5fd;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 960px; margin: 0 auto; padding: 48px 24px 64px; }
+  h1 { font-size: 30px; line-height: 1.2; margin: 4px 0 8px; letter-spacing: -0.01em; }
+  h2 { font-size: 20px; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+  h3 { font-size: 16px; margin: 0 0 8px; }
+  h4 { font-size: 14px; margin: 20px 0 6px; }
+  p { margin: 0 0 8px; }
+  ul { margin: 0; padding-left: 0; list-style: none; }
+  code { font: 12px/1 ui-monospace, "SF Mono", Menlo, monospace; padding: 2px 6px; border-radius: 4px; background: var(--surface); border: 1px solid var(--line); }
+  .eyebrow { text-transform: uppercase; letter-spacing: 0.12em; font-size: 12px; font-weight: 600; color: var(--judge); margin: 0; }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .up { color: var(--up); }
+  .down { color: var(--down); }
+  .meta { display: flex; flex-wrap: wrap; gap: 4px 16px; color: var(--muted); font-size: 14px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-top: 28px; }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .stat .label { font-size: 12px; color: var(--muted); margin: 0; }
+  .stat .value { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; margin: 2px 0 0; }
+  .card { border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin-bottom: 14px; break-inside: avoid; }
+  .card.judge { border-left: 3px solid var(--judge); }
+  .card header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 600; line-height: 1; padding: 4px 7px; border-radius: 999px; border: 1px solid currentColor; vertical-align: 1px; white-space: nowrap; }
+  .decision-adjusted, .stance-increase { color: var(--up); }
+  .decision-rejected, .stance-decrease { color: var(--down); }
+  .decision-accepted, .stance-support { color: var(--advocate); }
+  .stance-missing { color: #be123c; }
+  .role { border-color: transparent; background: var(--surface); }
+  .role-estimator { --role: var(--estimator); }
+  .role-engineer { --role: var(--engineer); }
+  .role-advocate { --role: var(--advocate); }
+  .role-judge { --role: var(--judge); }
+  .role.tag { color: var(--role); }
+  .figures { display: flex; flex-wrap: wrap; gap: 4px 20px; font-size: 14px; margin-bottom: 10px; }
+  blockquote { margin: 10px 0; padding: 2px 0 2px 14px; border-left: 2px solid var(--judge); }
+  .argument { border-left: 2px solid var(--role); padding: 2px 0 2px 12px; margin: 10px 0; }
+  .argument .claim { margin-bottom: 4px; }
+  .argument .reasoning { color: var(--muted); font-size: 14px; }
+  .turn { border-left: 3px solid var(--role); padding-left: 14px; margin: 18px 0; break-inside: avoid-page; }
+  .turn > h4 { color: var(--role); margin-top: 0; }
+  .turn .argument { border-left: 0; padding-left: 0; }
+  details { margin-bottom: 8px; }
+  summary { cursor: pointer; font-weight: 600; font-size: 16px; padding: 6px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; text-align: left; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; }
+  tr.changed td { background: color-mix(in srgb, var(--up) 7%, transparent); }
+  tr.removed td { text-decoration: line-through; color: var(--muted); }
+  tr.total td { font-weight: 700; border-bottom: 0; }
+  .table-wrap { overflow-x: auto; }
+  .totals { max-width: 480px; margin: 20px 0 0 auto; }
+  footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+  @media print {
+    body { font-size: 12px; }
+    main { max-width: none; padding: 0; }
+    h2 { break-after: avoid; }
+    details > summary { list-style: none; }
+    .table-wrap { overflow: visible; }
+  }
+  @page { margin: 16mm 14mm; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="eyebrow">CostCourt report</p>
+    <h1>{{ estimate.title }}</h1>
+    <p class="meta">
+      {% if estimate.location %}<span>{{ estimate.location }}</span>{% endif %}
+      <span>{{ report.created_at.strftime("%Y-%m-%d %H:%M UTC") }}</span>
+      <span>{{ report.rounds }} {{ "round" if report.rounds == 1 else "rounds" }}</span>
+      <span>{{ cur }}</span>
+      <span>Report <code>{{ report.id }}</code></span>
+    </p>
+    <div class="stats">
+      <div class="stat"><p class="label">Original total</p><p class="value">{{ impact.original_total | money }}</p></div>
+      <div class="stat"><p class="label">Revised total</p><p class="value">{{ impact.revised_total | money }}</p></div>
+      <div class="stat">
+        <p class="label">Change</p>
+        <p class="value {{ 'up' if impact.delta > 0 else 'down' if impact.delta < 0 else '' }}">{{ impact.delta_pct | signed_percent }}</p>
+        <p class="small muted">{{ impact.delta | signed_money }} {{ cur }}</p>
+      </div>
+      <div class="stat">
+        <p class="label">Judge's confidence</p>
+        <p class="value">{{ report.verdict.confidence | percent }}</p>
+        <p class="small muted">{{ view.ruled | length }} of {{ view.lines | length }} lines ruled on</p>
+      </div>
+    </div>
+  </header>
+
+  <section>
+    <h2>Judge's summary</h2>
+    <div class="card judge">
+      <p>{{ report.verdict.summary }}</p>
+      {% if report.verdict.recommendations %}
+      <h4>Recommendations</h4>
+      <ul style="list-style: disc; padding-left: 20px;">
+        {% for item in report.verdict.recommendations %}<li>{{ item }}</li>{% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+  </section>
+
+  <section>
+    <h2>Rulings</h2>
+    {% for line in view.ruled %}
+    {% set ruling = line.ruling %}
+    <article class="card">
+      <header>
+        <code>{{ line.id }}</code>
+        <h3 style="margin: 0;">{{ line.original.description }}</h3>
+        <span class="tag decision-{{ ruling.decision.value }}">{{ ruling.decision | decision }}</span>
+      </header>
+      <div class="figures">
+        {% if line.revised is none %}
+        <span>Removed: {{ line.original.quantity | quantity }} {{ line.original.unit | unit }} at {{ line.original.unit_rate | money }}</span>
+        {% else %}
+        {% if line.revised.quantity != line.original.quantity %}<span>Quantity {{ line.original.quantity | quantity }} → <strong>{{ line.revised.quantity | quantity }}</strong> {{ line.original.unit | unit }}</span>{% endif %}
+        {% if line.revised.unit_rate != line.original.unit_rate %}<span>Unit rate {{ line.original.unit_rate | money }} → <strong>{{ line.revised.unit_rate | money }}</strong></span>{% endif %}
+        {% endif %}
+        <span>Line total {{ line.original.total | money }} → <strong>{{ line.revised_total | money }}</strong>
+          {% if line.delta %}<span class="{{ 'up' if line.delta > 0 else 'down' }}">({{ line.delta | signed_money }})</span>{% endif %}</span>
+        {% if ruling.sided_with %}<span class="muted">Sided with {% for role in ruling.sided_with %}{{ role_tag(role) }} {% endfor %}</span>{% endif %}
+      </div>
+      <blockquote>{{ ruling.reasoning }}</blockquote>
+      {% if line.arguments %}
+      <ul>{% for entry in line.arguments %}{{ argument(entry, false) }}{% endfor %}</ul>
+      {% endif %}
+    </article>
+    {% else %}
+    <p class="muted">The judge made no changes to the estimate.</p>
+    {% endfor %}
+  </section>
+
+  {% if view.missing_scope %}
+  <section>
+    <h2>Missing scope raised</h2>
+    <p class="muted">Work the debaters said the estimate leaves out. The judge rules on priced lines only, so these are follow-ups, not changes.</p>
+    <ul>{% for entry in view.missing_scope %}{{ argument(entry, false) }}{% endfor %}</ul>
+  </section>
+  {% endif %}
+
+  <section>
+    <h2>Debate transcript</h2>
+    {% for round_no, turns in view.rounds %}
+    <details open>
+      <summary>Round {{ round_no }}</summary>
+      {% for turn in turns %}
+      <div class="turn role-{{ turn.role.value }}">
+        <h4>{{ turn.role | role }}</h4>
+        <p>{{ turn.summary }}</p>
+        <ul>{% for arg in turn.arguments %}{{ argument({"round": turn.round, "role": turn.role, "argument": arg}, true) }}{% endfor %}</ul>
+      </div>
+      {% endfor %}
+    </details>
+    {% endfor %}
+  </section>
+
+  <section>
+    <h2>Revised estimate</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Line</th><th>Description</th><th>Unit</th>
+            <th class="num">Qty</th><th class="num">Rate</th>
+            <th class="num">Original</th><th class="num">Revised</th><th class="num">Change</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for line in view.lines %}
+          <tr class="{{ 'removed' if line.revised is none else 'changed' if line.delta else '' }}">
+            <td><code>{{ line.id }}</code></td>
+            <td>{{ line.original.description }}<div class="muted small">{{ line.original.category | category }}</div></td>
+            <td>{{ line.original.unit | unit }}</td>
+            <td class="num">
+              {% if line.revised and line.revised.quantity != line.original.quantity %}<span class="muted">{{ line.original.quantity | quantity }} →</span> {{ line.revised.quantity | quantity }}{% else %}{{ line.original.quantity | quantity }}{% endif %}
+            </td>
+            <td class="num">
+              {% if line.revised and line.revised.unit_rate != line.original.unit_rate %}<span class="muted">{{ line.original.unit_rate | money }} →</span> {{ line.revised.unit_rate | money }}{% else %}{{ line.original.unit_rate | money }}{% endif %}
+            </td>
+            <td class="num">{{ line.original.total | money }}</td>
+            <td class="num">{{ line.revised_total | money }}</td>
+            <td class="num {{ 'up' if line.delta > 0 else 'down' if line.delta < 0 else 'muted' }}">{{ line.delta | signed_money if line.delta else "—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% set old = estimate.totals %}
+    {% set new = revised.totals %}
+    {% set m = estimate.markups %}
+    <table class="totals">
+      <thead><tr><th></th><th class="num">Markup</th><th class="num">Original</th><th class="num">Revised</th></tr></thead>
+      <tbody>
+        <tr><td>Direct cost</td><td></td><td class="num">{{ old.direct_cost | money }}</td><td class="num">{{ new.direct_cost | money }}</td></tr>
+        <tr><td>Overhead</td><td class="num">{{ m.overhead | quantity }}%</td><td class="num">{{ old.overhead | money }}</td><td class="num">{{ new.overhead | money }}</td></tr>
+        <tr><td>Profit</td><td class="num">{{ m.profit | quantity }}%</td><td class="num">{{ old.profit | money }}</td><td class="num">{{ new.profit | money }}</td></tr>
+        <tr><td>Contingency</td><td class="num">{{ m.contingency | quantity }}%</td><td class="num">{{ old.contingency | money }}</td><td class="num">{{ new.contingency | money }}</td></tr>
+        <tr><td>Tax</td><td class="num">{{ m.tax | quantity }}%</td><td class="num">{{ old.tax | money }}</td><td class="num">{{ new.tax | money }}</td></tr>
+        <tr class="total"><td>Grand total ({{ cur }})</td><td></td><td class="num">{{ old.grand_total | money }}</td><td class="num">{{ new.grand_total | money }}</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Models and token usage</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Agent</th><th>Round</th><th>Model</th><th class="num">Input</th><th class="num">Output</th><th class="num">Cache read</th></tr>
+        </thead>
+        <tbody>
+          {% for u in report.usage %}
+          <tr>
+            <td>{{ role_tag(u.role) }}</td>
+            <td>{{ u.round if u.round is not none else "verdict" }}</td>
+            <td><code>{{ u.model }}</code></td>
+            <td class="num">{{ "{:,}".format(u.input_tokens) }}</td>
+            <td class="num">{{ "{:,}".format(u.output_tokens) }}</td>
+            <td class="num">{{ "{:,}".format(u.cache_read_tokens) }}</td>
+          </tr>
+          {% endfor %}
+          <tr class="total">
+            <td>Total</td><td></td><td>{{ view.usage.calls }} calls</td>
+            <td class="num">{{ "{:,}".format(view.usage.input_tokens) }}</td>
+            <td class="num">{{ "{:,}".format(view.usage.output_tokens) }}</td>
+            <td class="num">{{ "{:,}".format(view.usage.cache_read_tokens) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>Generated by CostCourt {{ version }}. Every argument, ruling and figure above comes from the debate's audit trail.</footer>
+</main>
+</body>
+</html>

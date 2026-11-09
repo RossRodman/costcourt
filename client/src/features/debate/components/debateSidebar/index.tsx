@@ -1,6 +1,7 @@
 import { TotalsSummary } from "@/components/totalsSummary";
 import { Card, CardHeader } from "@/components/ui";
 import { Participants } from "@/features/debate/components/participants";
+import { ReportExport } from "@/features/debate/components/reportExport";
 import type { DebateState } from "@/features/debate/utils/debateState";
 import type { Estimate } from "@/types";
 
@@ -12,6 +13,7 @@ interface DebateSidebarProps {
 export function DebateSidebar({ state, estimate }: DebateSidebarProps) {
   return (
     <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+      {state.report && <ReportExport reportId={state.report.id} />}
       <Participants state={state} />
       {estimate && (
         <Card>

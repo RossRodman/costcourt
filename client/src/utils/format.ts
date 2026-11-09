@@ -16,7 +16,7 @@ function currencyFormatter(currency: string, whole: boolean): Intl.NumberFormat 
 
     currencyFormatters.set(key, newFormatter);
 
-    return newFormatter
+    return newFormatter;
   }
 
   return formatter;

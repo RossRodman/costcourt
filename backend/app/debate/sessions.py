@@ -5,7 +5,8 @@ A client starts a debate with one request and follows it with another
 reconnects gets the full history first, then live events.
 
 State is in memory: fine for a single-process app, swap for Redis/Postgres
-to scale out.
+to scale out. Completed reports are handed to `save_report` (the report
+store) so they outlive the session.
 """
 
 from __future__ import annotations
@@ -28,6 +29,7 @@ from app.estimates.models import Estimate
 log = logging.getLogger(__name__)
 
 Runner = Callable[..., AsyncIterator[DebateEvent]]
+ReportSaver = Callable[[DebateReport], object]
 
 
 class DebateStatus(StrEnum):
@@ -107,11 +109,19 @@ class DebateSession:
 class DebateManager:
     """Starts debates as background tasks and keeps the most recent ones."""
 
-    def __init__(self, *, max_sessions: int = 100, runner: Runner = run_debate) -> None:
+    def __init__(
+        self,
+        *,
+        max_sessions: int = 100,
+        runner: Runner = run_debate,
+        save_report: ReportSaver | None = None,
+    ) -> None:
+        """`save_report` is blocking (file I/O); it runs in a worker thread."""
         self._sessions: OrderedDict[UUID, DebateSession] = OrderedDict()
         self._tasks: set[asyncio.Task[None]] = set()
         self._max_sessions = max_sessions
         self._runner = runner
+        self._save_report = save_report
 
     def start(
         self, panel: Panel, estimate: Estimate, *, rounds: int, demo: bool = False
@@ -145,6 +155,9 @@ class DebateManager:
             async for event in self._runner(
                 panel, session.estimate, rounds=session.rounds, debate_id=session.id
             ):
+                if isinstance(event, DebateCompleted):
+                    # Save first: a client told "completed" can export right away.
+                    await self._save(event.report)
                 await session.publish(event)
         except asyncio.CancelledError:
             if not session.done:
@@ -157,6 +170,15 @@ class DebateManager:
         else:
             if not session.done:
                 await session.publish(DebateFailed(error="the debate ended without a result"))
+
+    async def _save(self, report: DebateReport) -> None:
+        """A failed save is logged, never fatal: the report is still in memory."""
+        if self._save_report is None:
+            return
+        try:
+            await asyncio.to_thread(self._save_report, report)
+        except Exception:
+            log.exception("could not save the report of debate %s", report.id)
 
     def _evict(self) -> None:
         """Drop the oldest finished debates once over capacity."""

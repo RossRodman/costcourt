@@ -12,6 +12,7 @@ from app.api.router import api_router
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging
 from app.debate.sessions import DebateManager
+from app.reports.store import ReportStore
 
 
 @asynccontextmanager
@@ -34,6 +35,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.settings = settings
-    app.state.debates = DebateManager()
+    app.state.reports = ReportStore(settings.reports_dir)
+    app.state.debates = DebateManager(save_report=app.state.reports.save)
     app.include_router(api_router)
     return app

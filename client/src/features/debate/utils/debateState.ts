@@ -90,6 +90,21 @@ export function debateReducer(state: DebateState, action: DebateAction): DebateS
   }
 }
 
+export function stateFromReport(report: DebateReport): DebateState {
+  const speakers = [...new Set(report.turns.map((turn) => turn.role))];
+  return {
+    ...initialDebateState,
+    status: "completed",
+    speakers,
+    totalRounds: report.rounds,
+    round: report.rounds,
+    turns: report.turns,
+    verdict: report.verdict,
+    report,
+    usage: report.usage,
+  };
+}
+
 export function isFinished(state: DebateState): boolean {
   return state.status === "completed" || state.status === "failed";
 }
