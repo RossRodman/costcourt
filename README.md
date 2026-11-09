@@ -7,6 +7,9 @@
 ![LangGraph](https://img.shields.io/badge/LangGraph-1.x-1C3C3C)
 ![Claude](https://img.shields.io/badge/LLM-Claude-D97757)
 ![Pydantic](https://img.shields.io/badge/Pydantic-v2-E92063?logo=pydantic&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-compose-2496ED?logo=docker&logoColor=white)
+
+![The judge's verdict on a warehouse slab estimate: summary, cost impact, and a ruling per disputed line](docs/screenshots/verdict.png)
 
 ## The idea
 
@@ -21,25 +24,63 @@ Checking a construction estimate is adversarial by nature: the person who wrote 
 
 The debate runs as a **LangGraph** state machine over a configurable number of rounds. Every agent returns **Pydantic**-validated structured output from **Claude**, so the final report is data first and prose second.
 
+## Screenshots
+
+| | |
+|---|---|
+| ![Home: pick a sample estimate or upload your own](docs/screenshots/home.png) | ![Live debate: each agent's arguments, line by line](docs/screenshots/debate.png) |
+| **Home**: pick a sample estimate (each hides a few mistakes) or upload your own. | **Debate**: every argument names its line, its stance and the figures it proposes. |
+| ![Reports: every finished debate, saved](docs/screenshots/reports.png) | ![Printable HTML report](docs/screenshots/report-html.png) |
+| **Reports**: every finished debate is saved and can be reopened. | **Printable report**: one self-contained HTML page, also exported as Markdown and JSON. |
+
 ## Tech stack
 
 | | |
 |---|---|
-| **Backend** | Python 3.11+, FastAPI, LangGraph, Anthropic SDK (Claude), Pydantic v2 |
-| **Client** | React 19, TypeScript, Vite, Tailwind CSS v4, lucide icons |
+| **Backend** | Python 3.11+, FastAPI, LangGraph, Anthropic SDK (Claude), Pydantic v2, Jinja2 (HTML reports) |
+| **Client** | React 19, TypeScript, Vite, React Router, TanStack Query, Tailwind CSS v4, lucide icons |
+| **Delivery** | Docker (multi-stage images, nginx for the client), Docker Compose |
 | **Quality** | ruff, mypy (strict), pytest · oxlint, Prettier, Vitest + Testing Library · pre-commit · GitHub Actions |
 
 ## Quick start
 
+### With Docker
+
+Requires Docker with Compose.
+
+```bash
+cp backend/.env.example backend/.env    # optional: add your ANTHROPIC_API_KEY
+docker compose up --build
+```
+
+Open **http://localhost:8080**. nginx serves the client and proxies `/api` to the backend, so the API docs are at http://localhost:8080/api/docs. Saved reports are kept in the `reports` volume, so they survive `docker compose down` (add `-v` to delete them). Use `COSTCOURT_WEB_PORT=3000 docker compose up` for another port.
+
+### Without Docker
+
 Requires Python 3.11+ and Node 20.19+.
 
 ```bash
-cp backend/.env.example backend/.env   # add your ANTHROPIC_API_KEY
-make install                           # Python venv + npm deps + git hooks
-make dev                               # API on :8000, UI on http://localhost:5173
+# Backend: http://127.0.0.1:8000/api/docs
+cd backend
+cp .env.example .env              # add your ANTHROPIC_API_KEY (optional for the demo)
+python3 -m venv .venv
+.venv/bin/pip install -e ".[dev]"
+.venv/bin/costcourt
+
+# Client: http://localhost:5173 (in a second terminal)
+cd client
+npm ci
+npm run dev
 ```
 
-`make help` lists all commands. `make check` runs the same lint, type-check and tests as CI.
+**No API key yet?** Open the client, pick the warehouse sample and click **Watch a demo**. It replays a recorded debate through the real pipeline (graph, domain checks, live stream, verdict), so you can see the whole flow before spending tokens.
+
+### Checks (same as CI)
+
+```bash
+cd backend && .venv/bin/ruff check . && .venv/bin/mypy && .venv/bin/pytest --cov
+cd client && npm run lint && npm run typecheck && npm test
+```
 
 ## Project layout
 
@@ -49,30 +90,154 @@ make dev                               # API on :8000, UI on http://localhost:51
 │   ├── app/
 │   │   ├── main.py           # app factory
 │   │   ├── api/              # HTTP layer: router, routes/, shared deps
-│   │   ├── core/             # settings, logging
-│   │   └── …                 # feature packages: estimates/, agents/, debate/, reports/
+│   │   ├── core/             # settings, logging, base model, money types
+│   │   ├── estimates/        # estimate model, sample catalog, /api/estimates
+│   │   ├── debate/           # domain models, LangGraph flow, live sessions, /api/debates
+│   │   ├── reports/          # saved reports, Markdown/HTML/JSON export, /api/reports
+│   │   ├── agents/           # Claude client, role prompts, debaters and judge
+│   │   └── demo/             # recorded debates replayed without an API key
 │   └── tests/
 ├── client/                   # React + Vite single-page app
 │   └── src/
-│       ├── components/
-│       ├── hooks/
-│       └── lib/              # typed API client, utils
-└── .github/workflows/ci.yml  # backend + client jobs
+│       ├── App.tsx           # root component: providers + router
+│       ├── app/              # routes, query client
+│       ├── api/              # typed API client
+│       ├── features/         # one folder per screen
+│       │   ├── home/         #   pages/ components/ hooks/
+│       │   ├── debate/       #   pages/ components/ hooks/ utils/ (event reducer)
+│       │   ├── reports/      #   pages/ components/ hooks/ (saved reports)
+│       │   └── notFound/
+│       ├── components/       # shared: ui/, layout/, estimateTable/, roleAvatar/, …
+│       ├── hooks/            # shared hooks (useHealth)
+│       ├── constants/        # roles, report formats, query keys, links
+│       ├── types/            # API types (estimate, debate, report)
+│       ├── utils/            # formatting, class names
+│       └── styled/           # shared typography classes
+├── docs/screenshots/         # images used in this README
+├── docker-compose.yml        # backend + client (nginx) on :8080
+└── .github/workflows/ci.yml  # backend + client checks, Docker image builds
 ```
 
+Each app has its own `Dockerfile`. The client image builds the app with Node and serves it with nginx (`client/nginx.conf`), which also proxies `/api` to the backend with buffering off, so the live debate stream arrives event by event.
+
 The backend follows FastAPI's official full-stack template (`app/` with `api/` and `core/`). Business logic lives in feature packages (estimates, agents, debate, reports), so routes stay thin. In dev, Vite proxies `/api` to FastAPI, so no CORS setup is needed.
+
+## Domain model
+
+- **Estimate**: scope, location, currency, priced **line items** (quantity × unit rate) and **markups** (overhead, profit, contingency, tax). Totals are computed, never stored, so they can't drift.
+- **Turn**: one debater's statement in a round, made of **arguments** about specific line items. Each argument either supports the line, proposes a higher or lower figure, or flags missing scope.
+- **Verdict**: the judge's **rulings** per disputed line (accepted / adjusted / rejected), with reasoning and the debaters it sided with.
+- **DebateReport**: the original estimate, every turn, the verdict, the revised estimate and the cost impact.
+
+Money is `Decimal`, rounded half-up to cents. Models are immutable and reject unknown fields, and the same models serve as the agents' structured-output contracts.
+
+Three sample estimates (`backend/app/estimates/samples/`) ship with deliberate, realistic problems for the agents to find: stale rates, under-measured reinforcement, missing waste allowances and a zero contingency on a risky site.
+
+## Agents
+
+Each agent is one structured-output call to Claude: the response is constrained to a Pydantic model's JSON schema and parsed into it.
+
+- **Debaters** (estimator, engineer, contractor's advocate) receive the estimate and the transcript so far, and return a turn of arguments. The code, not the model, decides the round and the role.
+- **The judge** receives the full transcript and must rule on every disputed line.
+- **Domain checks run on every answer**: unknown line item ids, rebutting someone who hasn't spoken, a verdict that skips a disputed line or can't be applied. A failed check is sent back to the model with the reason, so it can correct itself.
+- **The estimate is rendered once, deterministically, and marked for prompt caching**, so later turns reuse it cheaply.
+- **Refusals** opt into the API's server-side fallback (`fallbacks: "default"`). A final refusal surfaces as a typed error.
+- Agents depend on a small `StructuredLLM` protocol, not on the SDK, so all agent logic is tested with a scripted fake and no network.
+
+Try one agent on a sample (makes a real API call):
+
+```bash
+cd backend
+.venv/bin/python -m app.agents warehouse-slab --role engineer
+```
+
+## Debate flow
+
+The debate is a LangGraph state machine. Every round, the three debaters speak in turn. After the last round, the judge rules and the verdict is applied to produce the revised estimate.
+
+```mermaid
+flowchart LR
+    S([start]) --> R[open_round]
+    R --> E[estimator] --> G[engineer] --> A[advocate]
+    A -- more rounds --> R
+    A -- last round --> J[judge] --> X([end])
+```
+
+- **One graph serves every debate.** It is compiled once, and the agents are passed in through LangGraph's run context.
+- **Nodes report progress with the stream writer.** The runner turns that into typed events: `debate_started`, `round_started`, `turn_started`, `turn_completed`, `judge_started`, `verdict_reached`, then `debate_completed` (with the full report) or `debate_failed`.
+- **Debates run as background tasks.** Every event is kept, so a client that connects late, or reconnects with `Last-Event-ID`, gets the full history and then the live stream.
+- **Agent failures** (API down, refusal, invalid output) end the stream with a readable `debate_failed` event, never a hanging connection.
+- **The report** records every turn, the verdict, the revised estimate, the cost impact, and the model and token usage of each call.
+
+| Endpoint | |
+|---|---|
+| `POST /api/debates` | Start a debate on `{"sample_id": "warehouse-slab"}` or `{"estimate": {...}}`, optional `rounds`. Returns `202` with the debate id. |
+| `GET /api/debates/{id}/events` | Server-sent events: history, then live. Closes after the terminal event. |
+| `GET /api/debates/{id}` | Status, and the full report once completed |
+| `GET /api/debates` | Recent debates |
+
+Run a full debate in the terminal (makes real API calls):
+
+```bash
+cd backend
+.venv/bin/python -m app.debate warehouse-slab --rounds 1
+```
+
+Or through the API:
+
+```bash
+curl -s -X POST localhost:8000/api/debates -H 'content-type: application/json' \
+  -d '{"sample_id": "warehouse-slab", "rounds": 1}'
+curl -N localhost:8000/api/debates/<id>/events
+```
+
+## Reports
+
+When a debate completes, its report is saved as JSON in `backend/data/reports/<id>.json` before the `debate_completed` event goes out, so a client can export it right away. Saved reports outlive the in-memory debate sessions and server restarts.
+
+Every report can be exported in three formats:
+
+- **Markdown**: outcome, a section per ruling with the arguments behind it, the missing scope raised, the full transcript, the revised estimate and the token usage. Reads well raw and on GitHub.
+- **HTML**: the same content as one self-contained page with no external resources. Light and dark themes, and print styles, so "Print → Save as PDF" gives a clean document.
+- **JSON**: the complete `DebateReport`, which loads back with `DebateReport.model_validate_json`.
+
+All three are built from one view model (`app/reports/view.py`), so they never disagree. Estimate text is user input, so it is escaped in both HTML (Jinja2 autoescape) and Markdown.
+
+| Endpoint | |
+|---|---|
+| `GET /api/reports` | Saved reports, newest first (summaries) |
+| `GET /api/reports/{id}` | The full report. Its id is the debate's id. |
+| `GET /api/reports/{id}/export?format=markdown\|html\|json` | The report as a file. Add `download=true` to save it instead of opening it. |
+| `DELETE /api/reports/{id}` | Delete a saved report |
+
+From the terminal:
+
+```bash
+cd backend
+.venv/bin/python -m app.debate warehouse-slab --demo --report report.html  # run + export
+.venv/bin/python -m app.reports list
+.venv/bin/python -m app.reports export <id> -o report.md                   # format from extension
+```
+
+## Web UI
+
+- **Home:** choose one of the sample estimates (each hides a few realistic mistakes) or upload your own JSON. The server validates it before anything is spent. Then pick the number of rounds and start.
+- **Live debate:** turns appear as each agent finishes. Every argument shows its stance, the line it targets, and the proposed figures next to the original ones. While an agent is working, a "thinking" card is shown, and a side panel shows who has spoken.
+- **Verdict:** the judge's summary, the cost impact and confidence, a ruling for each disputed line (with whose argument it followed), recommendations, and a side-by-side revised estimate.
+- **Reports:** once a debate finishes, the sidebar offers the printable report and downloads in Markdown, HTML and JSON. The Reports page lists every saved report, and opens each one with the verdict first.
+- **Under the hood:** state is derived from the event stream by one pure reducer (`features/debate/utils/debateState.ts`). Reconnects resume from `Last-Event-ID`, so refreshing the page replays the debate.
 
 ## Roadmap
 
 The project is built in small, reviewable pull requests:
 
 - [x] **1. Project setup**: FastAPI backend and React/Vite client skeletons, typed settings, linting, strict typing, tests, CI
-- [ ] **2. Domain model**: Pydantic models for estimates, line items, arguments, rulings and reports, plus sample estimates
-- [ ] **3. Agents**: Claude client wrapper, role prompts and structured outputs for the estimator, engineer, advocate and judge
-- [ ] **4. Debate graph**: LangGraph orchestration of rounds and judging, tested with a fake LLM
-- [ ] **5. Reports**: decision trail rendered to Markdown, HTML and JSON
-- [ ] **6. Web UI**: React screens to upload or pick an estimate, watch the debate stream live (SSE) and read the verdict
-- [ ] **7. Polish**: Docker, screenshots, docs
+- [x] **2. Domain model**: Pydantic models for estimates, line items, arguments, rulings and reports, plus sample estimates
+- [x] **3. Agents**: Claude client wrapper, role prompts and structured outputs for the estimator, engineer, advocate and judge
+- [x] **4. Debate graph**: LangGraph orchestration of rounds and judging, background debates with a live SSE event stream, tested with a fake LLM
+- [x] **5. Web UI**: pick or upload an estimate, watch the debate live (SSE), read the verdict and the revised estimate. Includes a demo mode that needs no API key
+- [x] **6. Reports**: every finished debate saved to disk, exported to Markdown, HTML (printable) and JSON, from the API, the CLI and the UI
+- [x] **7. Polish**: Docker images and Compose, screenshots, docs
 
 ## Configuration
 
@@ -81,6 +246,11 @@ All settings are environment variables (see [`backend/.env.example`](backend/.en
 | Variable | Default | |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | — | Needed to run debates |
-| `COSTCOURT_DEBATER_MODEL` | `claude-sonnet-5-5` | Model for the three debaters |
+| `COSTCOURT_DEBATER_MODEL` | `claude-opus-5-5` | Model for the three debaters |
 | `COSTCOURT_JUDGE_MODEL` | `claude-opus-5-5` | Model for the judge |
+| `COSTCOURT_DEBATER_EFFORT` | `medium` | Thinking depth for debaters (`low` … `max`) |
+| `COSTCOURT_JUDGE_EFFORT` | `high` | Thinking depth for the judge |
 | `COSTCOURT_DEBATE_ROUNDS` | `2` | Number of rounds (1–5) |
+| `COSTCOURT_DEMO_DELAY_S` | `2.5` | Simulated thinking time per agent in demo replays |
+| `COSTCOURT_REPORTS_DIR` | `data/reports` | Where finished reports are saved (relative to `backend/`). `/data/reports` in Docker |
+| `COSTCOURT_WEB_PORT` | `8080` | Docker Compose only: the port the app is published on |

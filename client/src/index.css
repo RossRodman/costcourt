@@ -18,6 +18,15 @@
   --color-engineer: #38bdf8;
   --color-advocate: #34d399;
   --color-judge: #c4b5fd;
+
+  --animate-in: fade-up 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
 }
 
 @layer base {
@@ -31,5 +40,15 @@
 
   ::selection {
     @apply bg-judge/30;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
   }
 }

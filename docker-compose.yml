@@ -1,0 +1,34 @@
+# The whole app on http://localhost:8080
+#
+#   cp backend/.env.example backend/.env   # optional: add ANTHROPIC_API_KEY
+#   docker compose up --build
+#
+# Without an API key, the demo debates still work.
+
+services:
+  backend:
+    build: ./backend
+    env_file:
+      - path: backend/.env
+        required: false
+    environment:
+      # Fixed inside the container, whatever backend/.env says.
+      COSTCOURT_ENV: prod
+      COSTCOURT_HOST: 0.0.0.0
+      COSTCOURT_PORT: "8000"
+      COSTCOURT_REPORTS_DIR: /data/reports
+    volumes:
+      - reports:/data
+    restart: unless-stopped
+
+  client:
+    build: ./client
+    ports:
+      - "${COSTCOURT_WEB_PORT:-8080}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  reports:

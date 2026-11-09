@@ -1,0 +1,91 @@
+{
+  "id": "warehouse-slab",
+  "title": "Warehouse slab-on-grade (2,400 m²)",
+  "scope": "200 mm steel-fibre-reinforced slab-on-grade for a new distribution warehouse, 60 × 40 m, FM2 flatness for very-narrow-aisle racking. Subgrade prepared by others to ±25 mm. Pours planned in three bays with a laser screed; winter pours are possible.",
+  "location": "Denver, CO, USA",
+  "currency": "USD",
+  "markups": { "overhead": 6, "profit": 8, "contingency": 3, "tax": 0 },
+  "items": [
+    {
+      "id": "01.010",
+      "description": "Fine grading and proof-rolling of subgrade",
+      "category": "earthworks",
+      "unit": "m2",
+      "quantity": 2400,
+      "unit_rate": 3.4
+    },
+    {
+      "id": "01.020",
+      "description": "Crushed stone base, 150 mm compacted",
+      "category": "earthworks",
+      "unit": "m3",
+      "quantity": 360,
+      "unit_rate": 38
+    },
+    {
+      "id": "02.010",
+      "description": "Vapor retarder, 15 mil",
+      "category": "concrete",
+      "unit": "m2",
+      "quantity": 2400,
+      "unit_rate": 2.1,
+      "notes": "Plan area; no lap allowance."
+    },
+    {
+      "id": "02.020",
+      "description": "Ready-mix concrete 4000 psi to 200 mm slab",
+      "category": "concrete",
+      "unit": "m3",
+      "quantity": 420,
+      "unit_rate": 165
+    },
+    {
+      "id": "02.030",
+      "description": "Steel fibre reinforcement at 25 kg/m³",
+      "category": "steel",
+      "unit": "kg",
+      "quantity": 10500,
+      "unit_rate": 2.2
+    },
+    {
+      "id": "02.040",
+      "description": "Concrete pump with operator",
+      "category": "equipment",
+      "unit": "day",
+      "quantity": 2,
+      "unit_rate": 1900
+    },
+    {
+      "id": "02.050",
+      "description": "Placing, laser screeding and power-trowel finishing",
+      "category": "concrete",
+      "unit": "m2",
+      "quantity": 2400,
+      "unit_rate": 9.8
+    },
+    {
+      "id": "02.060",
+      "description": "Saw-cut control joints and semi-rigid joint filler",
+      "category": "concrete",
+      "unit": "m",
+      "quantity": 860,
+      "unit_rate": 7.5
+    },
+    {
+      "id": "02.070",
+      "description": "Curing compound",
+      "category": "concrete",
+      "unit": "m2",
+      "quantity": 2400,
+      "unit_rate": 0.9
+    },
+    {
+      "id": "03.010",
+      "description": "Laser screed machine hire",
+      "category": "equipment",
+      "unit": "day",
+      "quantity": 3,
+      "unit_rate": 2400
+    }
+  ]
+}

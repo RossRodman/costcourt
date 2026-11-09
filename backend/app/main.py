@@ -2,12 +2,23 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
 from app import __version__
 from app.api.router import api_router
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging
+from app.debate.sessions import DebateManager
+from app.reports.store import ReportStore
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    yield
+    await app.state.debates.aclose()
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -21,7 +32,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         version=__version__,
         docs_url="/api/docs",
         openapi_url="/api/openapi.json",
+        lifespan=lifespan,
     )
     app.state.settings = settings
+    app.state.reports = ReportStore(settings.reports_dir)
+    app.state.debates = DebateManager(save_report=app.state.reports.save)
     app.include_router(api_router)
     return app

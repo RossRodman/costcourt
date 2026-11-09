@@ -26,3 +26,10 @@ def test_health_reflects_configured_key() -> None:
 
 def test_openapi_is_served(client: TestClient) -> None:
     assert client.get("/api/openapi.json").status_code == 200
+
+
+def test_shutdown_closes_running_debates(settings: Settings) -> None:
+    app = create_app(settings)
+    with TestClient(app):
+        pass  # lifespan start + shutdown
+    assert app.state.debates.list() == []

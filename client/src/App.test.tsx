@@ -1,42 +1,44 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { createMemoryRouter } from "react-router";
+import { describe, expect, it } from "vitest";
 
 import { App } from "@/App";
-import type { Health } from "@/lib/api";
+import { routes } from "@/app/router";
+import { mockApi } from "@/test/utils";
 
-function mockHealth(response: Partial<Health> | Error) {
-  vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
-    response instanceof Error
-      ? Promise.reject(response)
-      : Response.json({ status: "ok", version: "0.1.0", env: "test", ...response }),
-  );
+function renderApp(health: object | Response) {
+  mockApi({
+    "GET /health": health,
+    "GET /estimates/samples": [],
+    "GET /debates/demos": [],
+    "GET /debates": [],
+  });
+  render(<App router={createMemoryRouter(routes, { initialEntries: ["/"] })} />);
 }
+
+const ONLINE = { status: "ok", version: "0.1.0", env: "test" };
 
 describe("App", () => {
   it("introduces all four debate roles", () => {
-    mockHealth({ llm_configured: true });
-    render(<App />);
-
+    renderApp({ ...ONLINE, llm_configured: true });
     for (const role of ["Estimator", "Engineer", "Contractor's advocate", "Judge"]) {
-      expect(screen.getByRole("heading", { name: role })).toBeInTheDocument();
+      expect(screen.getByText(role)).toBeInTheDocument();
     }
   });
 
   it("shows the backend as online", async () => {
-    mockHealth({ llm_configured: true });
-    render(<App />);
+    renderApp({ ...ONLINE, llm_configured: true });
     expect(await screen.findByText("API online")).toBeInTheDocument();
+    expect(screen.getByText("v0.1.0")).toBeInTheDocument();
   });
 
   it("warns when the Claude key is missing", async () => {
-    mockHealth({ llm_configured: false });
-    render(<App />);
+    renderApp({ ...ONLINE, llm_configured: false });
     expect(await screen.findByText(/no Claude key/)).toBeInTheDocument();
   });
 
   it("shows the backend as offline when the request fails", async () => {
-    mockHealth(new TypeError("Failed to fetch"));
-    render(<App />);
+    renderApp(Response.json({ detail: "down" }, { status: 503 }));
     expect(await screen.findByText("API offline")).toBeInTheDocument();
   });
 });
