@@ -7,6 +7,9 @@
 ![LangGraph](https://img.shields.io/badge/LangGraph-1.x-1C3C3C)
 ![Claude](https://img.shields.io/badge/LLM-Claude-D97757)
 ![Pydantic](https://img.shields.io/badge/Pydantic-v2-E92063?logo=pydantic&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-compose-2496ED?logo=docker&logoColor=white)
+
+![The judge's verdict on a warehouse slab estimate: summary, cost impact, and a ruling per disputed line](docs/screenshots/verdict.png)
 
 ## The idea
 
@@ -21,15 +24,38 @@ Checking a construction estimate is adversarial by nature: the person who wrote 
 
 The debate runs as a **LangGraph** state machine over a configurable number of rounds. Every agent returns **Pydantic**-validated structured output from **Claude**, so the final report is data first and prose second.
 
+## Screenshots
+
+| | |
+|---|---|
+| ![Home: pick a sample estimate or upload your own](docs/screenshots/home.png) | ![Live debate: each agent's arguments, line by line](docs/screenshots/debate.png) |
+| **Home**: pick a sample estimate (each hides a few mistakes) or upload your own. | **Debate**: every argument names its line, its stance and the figures it proposes. |
+| ![Reports: every finished debate, saved](docs/screenshots/reports.png) | ![Printable HTML report](docs/screenshots/report-html.png) |
+| **Reports**: every finished debate is saved and can be reopened. | **Printable report**: one self-contained HTML page, also exported as Markdown and JSON. |
+
 ## Tech stack
 
 | | |
 |---|---|
 | **Backend** | Python 3.11+, FastAPI, LangGraph, Anthropic SDK (Claude), Pydantic v2, Jinja2 (HTML reports) |
 | **Client** | React 19, TypeScript, Vite, React Router, TanStack Query, Tailwind CSS v4, lucide icons |
+| **Delivery** | Docker (multi-stage images, nginx for the client), Docker Compose |
 | **Quality** | ruff, mypy (strict), pytest · oxlint, Prettier, Vitest + Testing Library · pre-commit · GitHub Actions |
 
 ## Quick start
+
+### With Docker
+
+Requires Docker with Compose.
+
+```bash
+cp backend/.env.example backend/.env    # optional: add your ANTHROPIC_API_KEY
+docker compose up --build
+```
+
+Open **http://localhost:8080**. nginx serves the client and proxies `/api` to the backend, so the API docs are at http://localhost:8080/api/docs. Saved reports are kept in the `reports` volume, so they survive `docker compose down` (add `-v` to delete them). Use `COSTCOURT_WEB_PORT=3000 docker compose up` for another port.
+
+### Without Docker
 
 Requires Python 3.11+ and Node 20.19+.
 
@@ -87,8 +113,12 @@ cd client && npm run lint && npm run typecheck && npm test
 │       ├── types/            # API types (estimate, debate, report)
 │       ├── utils/            # formatting, class names
 │       └── styled/           # shared typography classes
-└── .github/workflows/ci.yml  # backend + client jobs
+├── docs/screenshots/         # images used in this README
+├── docker-compose.yml        # backend + client (nginx) on :8080
+└── .github/workflows/ci.yml  # backend + client checks, Docker image builds
 ```
+
+Each app has its own `Dockerfile`. The client image builds the app with Node and serves it with nginx (`client/nginx.conf`), which also proxies `/api` to the backend with buffering off, so the live debate stream arrives event by event.
 
 The backend follows FastAPI's official full-stack template (`app/` with `api/` and `core/`). Business logic lives in feature packages (estimates, agents, debate, reports), so routes stay thin. In dev, Vite proxies `/api` to FastAPI, so no CORS setup is needed.
 
@@ -207,7 +237,7 @@ The project is built in small, reviewable pull requests:
 - [x] **4. Debate graph**: LangGraph orchestration of rounds and judging, background debates with a live SSE event stream, tested with a fake LLM
 - [x] **5. Web UI**: pick or upload an estimate, watch the debate live (SSE), read the verdict and the revised estimate. Includes a demo mode that needs no API key
 - [x] **6. Reports**: every finished debate saved to disk, exported to Markdown, HTML (printable) and JSON, from the API, the CLI and the UI
-- [ ] **7. Polish**: Docker, screenshots, docs
+- [x] **7. Polish**: Docker images and Compose, screenshots, docs
 
 ## Configuration
 
@@ -222,4 +252,5 @@ All settings are environment variables (see [`backend/.env.example`](backend/.en
 | `COSTCOURT_JUDGE_EFFORT` | `high` | Thinking depth for the judge |
 | `COSTCOURT_DEBATE_ROUNDS` | `2` | Number of rounds (1–5) |
 | `COSTCOURT_DEMO_DELAY_S` | `2.5` | Simulated thinking time per agent in demo replays |
-| `COSTCOURT_REPORTS_DIR` | `data/reports` | Where finished reports are saved (relative to `backend/`) |
+| `COSTCOURT_REPORTS_DIR` | `data/reports` | Where finished reports are saved (relative to `backend/`). `/data/reports` in Docker |
+| `COSTCOURT_WEB_PORT` | `8080` | Docker Compose only: the port the app is published on |
